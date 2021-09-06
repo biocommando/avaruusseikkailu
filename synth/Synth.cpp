@@ -1,16 +1,19 @@
 #include "Synth.h"
-#include "kick_wav.h"
 #include <cmath>
 #include <string>
 #include <iostream>
+#include "kick_wav.h"
+
 SynthVoice::SynthVoice(float sample_rate, int key, int channel)
     : sample_rate(sample_rate), filter(sample_rate), osc1(sample_rate),
       osc2(sample_rate), key(key), channel(channel)
 {
     // This is kind of cheating but creating good sounding kicks
     // is just near impossible with this limited sub synth otherwise
-    osc1.setWaveTable(kick_wav);
-    osc2.setWaveTable(kick_wav);
+    osc1.setWavetable(get_kick_wav());
+    osc1.setWaveTableParams(0, 1);
+    osc2.setWavetable(get_kick_wav());
+    osc2.setWaveTableParams(0, 1);
     amp_envelope.trigger();
     filter_envelope.trigger();
 }
@@ -66,7 +69,7 @@ inline float note_to_hz(float note)
 }
 
 void SynthVoice::set_params(const SynthParams &params)
-{    
+{
     osc1_base_freq = note_to_hz(key + params.osc1_semitones);
     osc1.setFrequency(osc1_base_freq);
     osc1_type = params.osc1_type;
@@ -127,12 +130,16 @@ void Synth::handle_midi_event(unsigned char *event_data)
         new_voice.set_params(instruments[channel]);
         bool voice_attached = false;
         voice_lock.lock();
-        for (int i = 0; i < voices.size(); i++)
+         // Don't apply this logic to the FX channel, unless we have stupidly many voices active
+        if (channel != 15 || voices.size() > 64)
         {
-            if (voices[i].channel == channel && voices[i].key == event_data[1])
+            for (int i = 0; i < voices.size(); i++)
             {
-                voices[i] = new_voice;
-                voice_attached = true;
+                if (voices[i].channel == channel && voices[i].key == event_data[1])
+                {
+                    voices[i] = new_voice;
+                    voice_attached = true;
+                }
             }
         }
         if (!voice_attached)

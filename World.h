@@ -15,6 +15,7 @@
 #include "KeyConfig.h"
 #include "MissionConfig.h"
 #include "TextDrawer.h"
+#include "MidiTracker.h"
 
 class World
 {
@@ -25,6 +26,7 @@ class World
     int retrieve_target = -1;
     int mission_time = 0;
     int number_of_goals = 0;
+    bool last_thrust_key_status = false;
 
 public:
     std::map<int, WeaponProfile> weapon_profiles;
@@ -35,6 +37,7 @@ public:
     KeyConfig key_config;
     MissionConfig mission_config;
     TextDrawer text_drawer;
+    MidiTracker midi_tracker;
     // 0 = succeeded, -1 = failed, > 0 = goals unmet
     int goal_status = 0;
 
@@ -73,6 +76,8 @@ public:
 
     void init_game()
     {
+        midi_tracker.read_midi_file("miditracktest.mid");
+        midi_tracker.load_sound_effects("soundfx.mid_meta.ini");
         for (const auto goal : mission_config.mission_goals)
         {
             if (goal.name == "kill")
@@ -97,6 +102,8 @@ public:
     void create_shot(int weapon_profile, GameObject &parent)
     {
         WeaponProfile &wp = weapon_profiles[weapon_profile];
+        if (wp.sound > -1)
+            midi_tracker.trigger_sfx(wp.sound_key, wp.sound);
         auto parentActive = parent.get_type() != GameObjectType_PLAYER_SHOT && parent.get_type() != GameObjectType_ENM_SHOT;
         if (parentActive)
             parent.set_counter(reload_counter_id, wp.reload);
@@ -243,6 +250,10 @@ public:
         game_object_holder.clean_up(GameObjectType_PLAYER_SHOT, [&world](GameObject *obj)
                                     {
                                         auto explosion_intensity = (float)obj->get_flag(blast_radius_flag) / 32;
+                                        if (explosion_intensity > 1)
+                                            world.midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_medium);
+                                        else
+                                            world.midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_small);
                                         world.explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), explosion_intensity));
                                         if (obj->get_flag(number_of_child_particles_flag) > 0)
                                         {
@@ -266,6 +277,10 @@ public:
         game_object_holder.clean_up(GameObjectType_ENM_SHOT, [&world](GameObject *obj)
                                     {
                                         auto explosion_intensity = (float)obj->get_flag(blast_radius_flag) / 32;
+                                        if (explosion_intensity > 1)
+                                            world.midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_medium);
+                                        else
+                                            world.midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_small);
                                         world.explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), explosion_intensity));
                                         if (obj->get_flag(number_of_child_particles_flag) > 0)
                                         {
@@ -279,6 +294,7 @@ public:
                                     });
         game_object_holder.clean_up(GameObjectType_PLAYER, [&world](GameObject *obj)
                                     {
+                                        world.midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_large);
                                         for (int x_offs = -1; x_offs <= 1; x_offs++)
                                             for (int y_offs = -1; y_offs <= 1; y_offs++)
                                                 world.explosions.push_back(create_explosion(obj->get_x() + x_offs * 40, obj->get_y() + y_offs * 40, 2));
@@ -287,18 +303,21 @@ public:
                                     });
         game_object_holder.clean_up(GameObjectType_ENM_SHIP, [this](GameObject *obj)
                                     {
+                                        this->midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_large);
                                         this->explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), 1));
                                         if (--this->kill_target == 0)
                                             this->goal_status--;
                                     });
         game_object_holder.clean_up(GameObjectType_ENM_SOLDIER, [this](GameObject *obj)
                                     {
+                                        this->midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_medium);
                                         this->explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), 0.5));
                                         if (--this->kill_target == 0)
                                             this->goal_status--;
                                     });
         game_object_holder.clean_up(GameObjectType_ENM_TANK, [this](GameObject *obj)
                                     {
+                                        this->midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_var);
                                         this->explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), 3));
                                         if (--this->kill_target == 0)
                                             this->goal_status--;
@@ -307,6 +326,15 @@ public:
 
     void handle_keys(std::map<int, bool> &key_status)
     {
+        bool thrust_key = key_status[key_config.up];
+        if (thrust_key != last_thrust_key_status)
+        {
+            if (thrust_key)
+                midi_tracker.trigger_sfx(24, sfx_thrust, 100, 1);
+            else
+                midi_tracker.trigger_sfx(24, sfx_thrust, 100, 2);
+            last_thrust_key_status = thrust_key;
+        }
         if (key_status[key_config.up] && player->get_speed_in_direction() < 10)
             player->add_speed_in_direction(0.3);
         if (key_status[key_config.left])

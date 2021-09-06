@@ -183,6 +183,8 @@ public:
         {
             s += param.name + "=" + std::to_string(param.value) + '\n';
         }
+        // To make it possible to parse settings directly from DAW project file
+        s += "tempo=" + std::to_string(getTimeInfo(kVstTempoValid)->tempo) + '\n';
         s += "SYNTH_DATA_END\n";
         chunk = (char *)malloc(s.size() + 1);
         if (chunk)

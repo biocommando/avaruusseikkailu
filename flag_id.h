@@ -18,3 +18,27 @@ constexpr int ai_wants_to_shoot_flag = 1003;
 constexpr int ai_distance_flag = 1004;
 constexpr int ai_soldier_jump_counter_id = 1005;
 constexpr int ai_soldier_shoot_anim_counter_id = 1006;
+
+// SFX ids
+
+#define SFX_KEY(id) randomint(sfx_##id##_key_min, sfx_##id##_key_max)
+
+constexpr int sfx_explosion_large = 0;
+constexpr int sfx_explosion_medium = 1;
+constexpr int sfx_explosion_small = 2;
+constexpr int sfx_explosion_var = 3;
+
+constexpr int sfx_explosion_key_min = 12;
+constexpr int sfx_explosion_key_max = 30;
+
+constexpr int sfx_thrust = 4;
+
+constexpr int sfx_drop_bomb = 5;
+
+constexpr int sfx_drop_bomb_key = 36;
+
+constexpr int sfx_laser_1 = 6;
+constexpr int sfx_laser_2 = 7;
+
+constexpr int sfx_laser_key_min = 48;
+constexpr int sfx_laser_key_max = 52;

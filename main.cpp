@@ -1,7 +1,6 @@
 
 #include "World.h"
 #include "MissionMenu.h"
-#include "MidiTracker.h"
 #include "allegro5/allegro_audio.h"
 
 float camera_offset_x = 0, camera_offset_y = 50;
@@ -20,7 +19,7 @@ void calc_camera_offset_correction(float plr_pos, float *camera_offset, float sc
 
     if (*camera_offset < 0)
         *camera_offset = 0;
-    else if (*camera_offset > level_size - screen_size)
+    else if (level_size > screen_size && *camera_offset > level_size - screen_size)
         *camera_offset = level_size - screen_size;
 }
 
@@ -31,20 +30,6 @@ int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
     world.mission_config = mission_config;
 
     world.init_game();
-
-    MidiTracker midi_tracker;
-    midi_tracker.read_midi_file("miditracktest.mid");
-    /*Synth synth(44100);
-    synth.set_send_delay_params(0.5, 100);
-    SynthParams p{
-        2, 0, 0.5,
-        2, -12, 0.5,
-        0.01, 0.1, 0.5, 0.2,
-        0.01, 0.1, 0.5, 0.2,
-        0.5, 0.5, 0, 0.5, 0};
-    synth.add_instrument(0, p, 0.5);
-    unsigned char midi[3] = {0b10000000, 60, 100};
-    synth.handle_midi_event(midi);*/
 
     std::map<int, bool> key_status;
     float target_camera_y = camera_offset_y;
@@ -61,12 +46,7 @@ int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
             auto stream = (ALLEGRO_AUDIO_STREAM *) event.any.source;
             float *buf = (float*)al_get_audio_stream_fragment(stream);
             if (buf) {
-                //synth.process(buf, 1024);
-                /*for (int i = 0; i < 1024; i++)
-                {
-                    buf[i] = random(-1 , 1);
-                }*/
-                midi_tracker.process_buffer(buf, 1024);
+                world.midi_tracker.process_buffer(buf, 1024);
                 al_set_audio_stream_fragment(stream, buf);
             }
         }

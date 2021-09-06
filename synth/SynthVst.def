@@ -1,0 +1,4 @@
+LIBRARY FMSYNTH
+EXPORTS
+VSTPluginMain 
+main=VSTPluginMain

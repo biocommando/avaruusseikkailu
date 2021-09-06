@@ -23,6 +23,8 @@ public:
     int id;
     bool affected_by_gravity = true;
     bool bouncy = false;
+    int sound = -1;
+    int sound_key = 48;
     std::string name;
 
     WeaponProfile()
@@ -64,6 +66,10 @@ public:
                               this->name = val;
                           if (key == "affected_by_gravity")
                               this->affected_by_gravity = std::stoi(val) != 0;
+                          if (key == "sound")
+                              this->sound = std::stoi(val);
+                          if (key == "sound_key")
+                              this->sound_key = std::stoi(val);
                           if (key == "bouncy")
                               this->bouncy = std::stoi(val) != 0;
                       },

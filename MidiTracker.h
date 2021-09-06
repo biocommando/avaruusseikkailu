@@ -24,6 +24,8 @@ class MidiTracker
     std::vector<std::vector<MidiEvent>> tracks;
     std::vector<unsigned> next_track_event_at;
     std::vector<unsigned> next_track_event_idx;
+    std::vector<SynthParams> sound_effects;
+    std::vector<MidiEvent> sfx_release;
     FILE *f = nullptr;
     Synth synth;
 
@@ -163,12 +165,13 @@ class MidiTracker
         }
     }
 
-    void read_metadata(const std::string &file)
+    void read_metadata(const std::string &file, bool load_sfx = false)
     {
         SynthParams currentParams;
         float delay_send = 0, delay_time = 500, delay_feed = 0.5;
+        int instrument_count = 0;
         ConfigFile cf(
-            [this, &currentParams, &delay_send, &delay_time, &delay_feed](const auto &name, const auto &strValue)
+            [this, &currentParams, &delay_send, &delay_time, &delay_feed, &load_sfx](const auto &name, const auto &strValue)
             {
                 auto value = std::stof(strValue);
                 if (name == "o1type")
@@ -228,23 +231,38 @@ class MidiTracker
 
                 if (name == "delsnd")
                     delay_send = value;
-                if (name == "deltm")
+                if (!load_sfx)
                 {
-                    delay_time = 1000 * value;
-                    this->synth.set_send_delay_params(delay_feed, delay_time);
-                }
-                if (name == "delfb")
-                {
-                    delay_feed = value;
-                    this->synth.set_send_delay_params(delay_feed, delay_time);
-                }
+                    if (name == "deltm")
+                    {
+                        delay_time = 1000 * value;
+                        this->synth.set_send_delay_params(delay_feed, delay_time);
+                    }
+                    if (name == "delfb")
+                    {
+                        delay_feed = value;
+                        this->synth.set_send_delay_params(delay_feed, delay_time);
+                    }
 
-                if (name == "add_instrument")
-                    this->synth.add_instrument(value, currentParams, delay_send);
-                if (name == "tempo")
-                    this->tempo = value;
+                    if (name == "tempo")
+                        this->tempo = value;
+                }
             },
-            [this](const auto &str) {});
+            [this, &instrument_count, &currentParams, &delay_send, &load_sfx](const auto &str)
+            {
+                if (str == "SYNTH_DATA_END")
+                {
+                    if (load_sfx)
+                    {
+                        this->sound_effects.push_back(currentParams);
+                    }
+                    else if (instrument_count < 16)
+                    {
+                        this->synth.add_instrument(instrument_count, currentParams, delay_send);
+                        instrument_count++;
+                    }
+                }
+            });
         cf.read_config_file(file);
     }
 
@@ -252,14 +270,11 @@ public:
     MidiTracker() : synth(44100)
     {
         synth.set_send_delay_params(0.5, 100);
-        /*SynthParams p{
-            2, 0, 0.5,
-            2, -12, 0.5,
-            0.01, 0.1, 0.5, 0.2,
-            0.01, 0.1, 0.5, 0.2,
-            0.5, 0.5, 0, 0.5, 0};
-        for (int i = 0; i < 16; i++)
-            synth.add_instrument(i, p, 0.5);*/
+    }
+
+    void load_sound_effects(const std::string &file)
+    {
+        read_metadata(file, true);
     }
 
     void read_midi_file(const std::string &file)
@@ -300,6 +315,35 @@ public:
         fclose(f);
     }
 
+    /**
+     * trigger_mode flags:
+     * 1 = trigger (note on)
+     * 2 = release (note off)
+     * --
+     * id can be omitted if only trigger_mode release flag is set
+     * or if the last effect is re-used
+     */
+    void trigger_sfx(int key, int id = 1000, int volume = 100, int trigger_mode = 3)
+    {
+        unsigned char midi_data[3] = {0, (unsigned char)key, (unsigned char)volume};
+        if (trigger_mode & 1)
+        {
+            if (id < sound_effects.size())
+                synth.add_instrument(15, sound_effects[id], 0);
+            midi_data[0] = 0b10010000 | 15;
+            synth.handle_midi_event(midi_data);
+        }
+        if (trigger_mode & 2)
+        {
+            midi_data[0] = 0b10000000 | 15;
+            //synth.handle_midi_event(midi_data);
+            // make all triggers at least one tick long
+            MidiEvent e;
+            memcpy(e.data, midi_data, 3);
+            sfx_release.push_back(e);
+        }
+    }
+
     void process_buffer(float *buf, int size)
     {
         int process_at_idx = 0;
@@ -308,6 +352,15 @@ public:
             if (++tick_pos == samples_per_tick)
             {
                 synth.process(&buf[process_at_idx], i - process_at_idx);
+                if (sfx_release.size() > 0)
+                {
+                    for (auto &sfx_rel : sfx_release)
+                    {
+                        synth.handle_midi_event(sfx_rel.data);
+                    }
+                    sfx_release.clear();
+                }
+
                 process_at_idx = i;
                 tick_pos = 0;
                 for (int trk = 0; trk < tracks.size(); trk++)

@@ -1,5 +1,5 @@
 #include "AdsrEnvelope.h"
-
+#include <iostream>
 AdsrEnvelope::AdsrEnvelope() : cycleAttackDecay(false),
                                endReached(true), sustain(0), stage(0),
                                stages({EnvelopeStage(true), EnvelopeStage(true), EnvelopeStage(false), EnvelopeStage(true)})
