@@ -8,6 +8,9 @@ int screen_w = 640 * 2, screen_h = 480 * 2;
 
 void calc_camera_offset_correction(float plr_pos, float *camera_offset, float screen_size, float level_size)
 {
+    // camera correction not needed if whole level fits on screen at once
+    if (level_size <= screen_size)
+        return;
     auto target = plr_pos - screen_size / 2;
 
     auto offset_correction = (target - *camera_offset) * 0.08;
@@ -19,7 +22,7 @@ void calc_camera_offset_correction(float plr_pos, float *camera_offset, float sc
 
     if (*camera_offset < 0)
         *camera_offset = 0;
-    else if (level_size > screen_size && *camera_offset > level_size - screen_size)
+    else if (*camera_offset > level_size - screen_size)
         *camera_offset = level_size - screen_size;
 }
 
