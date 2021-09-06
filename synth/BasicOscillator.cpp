@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-constexpr int wtSize = 10000;
+constexpr int wtSize = 4537;
 
 BasicOscillator::BasicOscillator(int sampleRate) : phase(0), hzToF(1.0f / (float)sampleRate),
-                                                   frequency(0), wtPos(0), wtWindow(0)
+                                                   frequency(0), wtPos(0), wtWindow(1)
 {
 }
 

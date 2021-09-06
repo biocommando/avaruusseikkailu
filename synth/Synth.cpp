@@ -1,4 +1,5 @@
 #include "Synth.h"
+#include "kick_wav.h"
 #include <cmath>
 #include <string>
 #include <iostream>
@@ -6,6 +7,10 @@ SynthVoice::SynthVoice(float sample_rate, int key, int channel)
     : sample_rate(sample_rate), filter(sample_rate), osc1(sample_rate),
       osc2(sample_rate), key(key), channel(channel)
 {
+    // This is kind of cheating but creating good sounding kicks
+    // is just near impossible with this limited sub synth otherwise
+    osc1.setWaveTable(kick_wav);
+    osc2.setWaveTable(kick_wav);
     amp_envelope.trigger();
     filter_envelope.trigger();
 }
@@ -61,7 +66,7 @@ inline float note_to_hz(float note)
 }
 
 void SynthVoice::set_params(const SynthParams &params)
-{
+{    
     osc1_base_freq = note_to_hz(key + params.osc1_semitones);
     osc1.setFrequency(osc1_base_freq);
     osc1_type = params.osc1_type;

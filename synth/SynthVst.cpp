@@ -47,9 +47,9 @@ class SynthVst : public AudioEffectX
     {
 
         if (name == "o1type")
-            currentParams.osc1_type = (int)(4 * value * 0.99);
+            currentParams.osc1_type = (int)(5 * value * 0.99);
         if (name == "o2type")
-            currentParams.osc2_type = (int)(4 * value * 0.99);
+            currentParams.osc2_type = (int)(5 * value * 0.99);
 
         if (name == "o1tune")
             currentParams.osc1_semitones = -24 + 48 * value;
@@ -255,7 +255,13 @@ public:
             else if (param.name == "deltm")
                 strcpy(text, std::to_string((int)(param.value * 1000)).c_str());
             else if (param.name == "o1type" || param.name == "o2type")
-                strcpy(text, std::to_string((int)(4 * param.value * 0.99)).c_str());
+            {
+                const char waves[][5] = {
+                    "sin", "tri", "saw", "sqr", "kick"
+                };
+                int sel = 5 * param.value * 0.99;
+                strcpy(text, waves[sel]);
+            }
             else if (param.name == "o1tune" || param.name == "o2tune")
                 float2string(-24 + 48 * param.value, text, kVstMaxParamStrLen);
             else

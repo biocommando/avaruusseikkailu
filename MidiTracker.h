@@ -172,9 +172,9 @@ class MidiTracker
             {
                 auto value = std::stof(strValue);
                 if (name == "o1type")
-                    currentParams.osc1_type = (int)(4 * value * 0.99);
+                    currentParams.osc1_type = (int)(5 * value * 0.99);
                 if (name == "o2type")
-                    currentParams.osc2_type = (int)(4 * value * 0.99);
+                    currentParams.osc2_type = (int)(5 * value * 0.99);
 
                 if (name == "o1tune")
                     currentParams.osc1_semitones = -24 + 48 * value;
