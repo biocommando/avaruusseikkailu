@@ -128,7 +128,7 @@ class SynthVst : public AudioEffectX
     }
 
 public:
-    SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 25), synth(sampleRate)
+    SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 26), synth(sampleRate)
     {
         setNumInputs(2);          // stereo in
         setNumOutputs(2);         // stereo out
@@ -160,6 +160,8 @@ public:
         add_param("deltm", 1);
         add_param("delfb", 0.5);
         add_param("volume", 0.5);
+        // This can be used to identify correct instrument instances from the binary chunk
+        add_param("my_id", 0);
         sync_params();
     }
 
@@ -179,6 +181,8 @@ public:
             chunk = nullptr;
         }
         std::string s = "SYNTH_DATA_START\n";
+        int instance_id = 16 * parameters[parameters.size() - 1].value * .99;
+        s += "SYNTH_INSTANCE_ID " + std::to_string(instance_id) + '\n';
         for (auto &param : parameters)
         {
             s += param.name + "=" + std::to_string(param.value) + '\n';
@@ -266,6 +270,8 @@ public:
             }
             else if (param.name == "o1tune" || param.name == "o2tune")
                 float2string(-24 + 48 * param.value, text, kVstMaxParamStrLen);
+            else if (param.name == "my_id")
+                strcpy(text, std::to_string((int)(16 * param.value * .99)).c_str());
             else
                 float2string(param.value, text, kVstMaxParamStrLen);
         }

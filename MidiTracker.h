@@ -260,6 +260,9 @@ class MidiTracker
                     {
                         this->synth.add_instrument(instrument_count, currentParams, delay_send);
                         instrument_count++;
+                        // Skip FX track (drum track in GM) (ch num 10 = idx 9)
+                        if (instrument_count == 9)
+                            instrument_count++;
                     }
                 }
             });
@@ -302,9 +305,10 @@ public:
                 fread(&division, sizeof(unsigned short), 1, f);
                 change_endianness(&division, 2);
                 ticks_per_quarter_note = division;
-                auto ticks_per_second = 60.0f / tempo * ticks_per_quarter_note * 4;
+                auto ticks_per_second = tempo / 60.0f * ticks_per_quarter_note;
                 samples_per_tick = 44100 / ticks_per_second;
-                //std::cout << "Samples per tick: " << std::to_string(samples_per_tick) << "\n";
+                /*std::cout << "Tempo: " << std::to_string(tempo) << "\n";
+                std::cout << "Samples per tick: " << std::to_string(samples_per_tick) << "\n";*/
             }
             else if (chunk_type == "MTrk")
             {
@@ -329,13 +333,13 @@ public:
         if (trigger_mode & 1)
         {
             if (id < sound_effects.size())
-                synth.add_instrument(15, sound_effects[id], 0);
-            midi_data[0] = 0b10010000 | 15;
+                synth.add_instrument(9, sound_effects[id], 0);
+            midi_data[0] = 0b10010000 | 9;
             synth.handle_midi_event(midi_data);
         }
         if (trigger_mode & 2)
         {
-            midi_data[0] = 0b10000000 | 15;
+            midi_data[0] = 0b10000000 | 9;
             //synth.handle_midi_event(midi_data);
             // make all triggers at least one tick long
             MidiEvent e;

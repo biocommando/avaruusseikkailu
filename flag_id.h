@@ -18,6 +18,8 @@ constexpr int ai_wants_to_shoot_flag = 1003;
 constexpr int ai_distance_flag = 1004;
 constexpr int ai_soldier_jump_counter_id = 1005;
 constexpr int ai_soldier_shoot_anim_counter_id = 1006;
+constexpr int ai_check_visible_counter_id = 1007;
+constexpr int ai_sees_player_flag = 1008;
 
 // SFX ids
 

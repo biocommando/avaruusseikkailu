@@ -130,8 +130,8 @@ void Synth::handle_midi_event(unsigned char *event_data)
         new_voice.set_params(instruments[channel]);
         bool voice_attached = false;
         voice_lock.lock();
-         // Don't apply this logic to the FX channel, unless we have stupidly many voices active
-        if (channel != 15 || voices.size() > 64)
+         // Don't apply this logic to the FX channel unless we have very many voices active already
+        if (channel != 9 || voices.size() > 16)
         {
             for (int i = 0; i < voices.size(); i++)
             {
@@ -139,6 +139,7 @@ void Synth::handle_midi_event(unsigned char *event_data)
                 {
                     voices[i] = new_voice;
                     voice_attached = true;
+                    break;
                 }
             }
         }

@@ -76,7 +76,7 @@ public:
 
     void init_game()
     {
-        midi_tracker.read_midi_file("miditracktest.mid");
+        midi_tracker.read_midi_file(mission_config.music);
         midi_tracker.load_sound_effects("soundfx.mid_meta.ini");
         for (const auto goal : mission_config.mission_goals)
         {
@@ -122,6 +122,7 @@ public:
                 shot.set_speed(parent.get_dx(), parent.get_dy());
             }
             shot.add_speed_in_direction(wp.speed);
+            shot.accelerate_in_direction(wp.acceleration, false);
             shot.set_affected_by_gravity(wp.affected_by_gravity);
             shot.set_counter(alive_counter_id, wp.alive_timer + randomint(0, wp.alive_timer_variation));
             shot.set_flag(number_of_child_particles_flag, wp.number_of_child_particles);
@@ -164,7 +165,7 @@ public:
                 if (e.type == "tank")
                     type = GameObjectType_ENM_TANK;
 
-                auto &enemy = game_object_holder.add_object(new GameObject(sprites[e.sprite], type, e.hitbox_w, e.hitbox_w, tile_map));
+                auto &enemy = game_object_holder.add_object(new GameObject(sprites[e.sprite], type, e.hitbox_w, e.hitbox_h, tile_map));
                 enemy.set_position(iop.x + 32 - e.hitbox_w / 2, iop.y + 32 - e.hitbox_h / 2);
                 enemy.set_health(e.health);
                 enemy.set_flag(weapon_flag, e.weapon);
@@ -191,10 +192,11 @@ public:
                 auto &enemies = game_object_holder.get_category((GameObjectType)enm_type);
                 for (auto &enm : enemies)
                 {
+                    ai_check_visible(*enm, *player, tile_map);
                     if (enm_type == GameObjectType_ENM_SHIP)
                         ship_ai(*enm, *player);
                     else if (enm_type == GameObjectType_ENM_SOLDIER)
-                        soldier_ai(*enm, *player);
+                        soldier_ai(*enm, *player, tile_map);
                     else
                         tank_ai(*enm, *player);
                     if (enm->get_flag(ai_wants_to_shoot_flag))
@@ -335,8 +337,9 @@ public:
                 midi_tracker.trigger_sfx(24, sfx_thrust, 100, 2);
             last_thrust_key_status = thrust_key;
         }
-        if (key_status[key_config.up] && player->get_speed_in_direction() < 10)
-            player->add_speed_in_direction(0.3);
+        if (key_status[key_config.up])// && player->get_speed_in_direction() < 10)
+            player->accelerate_in_direction(0.15);
+            //player->add_speed_in_direction(0.3);
         if (key_status[key_config.left])
         {
             if (key_status[key_config.strafe])

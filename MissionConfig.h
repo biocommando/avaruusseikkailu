@@ -17,6 +17,7 @@ public:
     int mission_number;
     std::vector<MissionGoal> mission_goals;
     std::string map_file;
+    std::string music;
 
     static std::vector<MissionConfig> read_from_file(const std::string &file)
     {
@@ -35,6 +36,8 @@ public:
                               c.map_file = val;
                           if (key == "name")
                               c.name = val;
+                          if (key == "music")
+                              c.music = val;
                       },
                       [&c, &v, &g](const auto &s)
                       {

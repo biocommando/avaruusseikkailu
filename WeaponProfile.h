@@ -13,6 +13,7 @@ public:
     float random_spread = 0;
     float spread = 0.1;
     float speed = 10;
+    float acceleration = 0;
     float angle = 0;
     int blast_radius = 32;
     int reload = 5;
@@ -48,6 +49,8 @@ public:
                               this->angle = std::stof(val) * ALLEGRO_PI / 180;
                           if (key == "speed")
                               this->speed = std::stof(val);
+                          if (key == "acceleration")
+                              this->acceleration = std::stof(val);
                           if (key == "reload")
                               this->reload = std::stoi(val);
                           if (key == "alive_timer")

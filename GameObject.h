@@ -19,7 +19,10 @@ enum GameObjectType
     GameObjectType_ENM_SHOT,
 };
 
-constexpr float gravitation = 0.15f;
+constexpr float gravity = 0.1f;
+constexpr float acceleration_damping = 0.5f;
+constexpr float acceleration_max = 0.3f;
+constexpr float speed_limit_in_one_dir = 4;
 
 class GameObject
 {
@@ -37,6 +40,7 @@ class GameObject
     std::map<int, int> counters;
     std::map<int, int> flags;
     bool affected_by_gravity = true;
+    float acceleration = 0;
 
 public:
     GameObject(Sprite &sprite, GameObjectType type, float hitbox_w, float hitbox_h, TileMap &tiles)
@@ -111,6 +115,13 @@ public:
         dy -= speed * cos(direction_angle + angle);
     }
 
+    void accelerate_in_direction(float acceleration, bool limit = true)
+    {
+        this->acceleration += acceleration;
+        if (limit && this->acceleration > acceleration_max)
+            this->acceleration = acceleration_max;
+    }
+
     float get_speed_in_direction()
     {
         return sqrt(dx * dx + dy * dy);
@@ -149,13 +160,28 @@ public:
             if (counter.second > 0)
                 counter.second--;
         }
-        if (type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT)
+        const auto is_shot = type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT;
+        if (is_shot)
         {
             if (counters[alive_counter_id] == 0)
             {
                 health = -1;
                 return;
             }
+        }
+        else
+        {
+            if (dx > speed_limit_in_one_dir)
+                dx = speed_limit_in_one_dir;
+            if (dy > speed_limit_in_one_dir)
+                dy = speed_limit_in_one_dir;
+        }
+
+        if (acceleration > 0)
+        {
+            add_speed_in_direction(acceleration);
+            if (!is_shot)
+                acceleration *= acceleration_damping;
         }
         float new_x, new_y;
         int i = 1;
@@ -218,7 +244,7 @@ public:
             y = new_y;
         }
         if (affected_by_gravity)
-            dy += gravitation;
+            dy += gravity;
     }
 
     bool collides(const GameObject &other)
@@ -248,9 +274,13 @@ public:
         sprite.draw(x, y);
     }
 
-    float get_x() { return x; }
+    float get_x() const { return x; }
 
-    float get_y() { return y; }
+    float get_y() const { return y; }
+
+    float get_hitbox_w() const { return hitbox_w; }
+
+    float get_hitbox_h() const { return hitbox_h; }
 };
 
 class GameObjectHolder
