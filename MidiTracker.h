@@ -16,6 +16,7 @@ struct MidiEvent
 class MidiTracker
 {
     float tempo = 120;
+    float sample_rate;
     float signature = 4;
     int ticks_per_quarter_note = 48;
     int samples_per_tick = 0;
@@ -228,6 +229,8 @@ class MidiTracker
 
                 if (name == "volume")
                     currentParams.volume = value;
+                if (name == "pan")
+                    currentParams.pan = value;
 
                 if (name == "delsnd")
                     delay_send = value;
@@ -270,7 +273,7 @@ class MidiTracker
     }
 
 public:
-    MidiTracker() : synth(44100)
+    MidiTracker(float sample_rate) : sample_rate(sample_rate), synth(sample_rate)
     {
         synth.set_send_delay_params(0.5, 100);
     }
@@ -306,9 +309,10 @@ public:
                 change_endianness(&division, 2);
                 ticks_per_quarter_note = division;
                 auto ticks_per_second = tempo / 60.0f * ticks_per_quarter_note;
-                samples_per_tick = 44100 / ticks_per_second;
-                /*std::cout << "Tempo: " << std::to_string(tempo) << "\n";
-                std::cout << "Samples per tick: " << std::to_string(samples_per_tick) << "\n";*/
+                samples_per_tick = sample_rate / ticks_per_second;
+                //samples_per_tick *= 2; // Stereo audio has 2 words per sample
+                std::cout << "Tempo: " << std::to_string(tempo) << "\n";
+                std::cout << "Samples per tick: " << std::to_string(samples_per_tick) << "\n";
             }
             else if (chunk_type == "MTrk")
             {
@@ -351,11 +355,12 @@ public:
     void process_buffer(float *buf, int size)
     {
         int process_at_idx = 0;
+        size *= 2; // stereo
         for (int i = 0; i < size; i++)
         {
             if (++tick_pos == samples_per_tick)
             {
-                synth.process(&buf[process_at_idx], i - process_at_idx);
+                synth.process(&buf[process_at_idx], nullptr, i - process_at_idx);
                 if (sfx_release.size() > 0)
                 {
                     for (auto &sfx_rel : sfx_release)
@@ -391,7 +396,11 @@ public:
                 }
                 pos++;
             }
+            // in stereo audio every other sample is for left and every other for right
+            // so let's make sure that we run any logic only when index is at left channel
+            // so we don't need to care about misalignment of the channels
+            i++; 
         }
-        synth.process(&buf[process_at_idx], size - process_at_idx);
+        synth.process(&buf[process_at_idx], nullptr, size - process_at_idx);
     }
 };

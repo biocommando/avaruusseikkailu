@@ -1,0 +1,1 @@
+g++ -c AdsrEnvelope.cpp BasicDelay.cpp BasicOscillator.cpp EnvelopeStage.cpp Synth.cpp kick_wav.cpp

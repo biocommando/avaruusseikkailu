@@ -63,6 +63,12 @@ void SynthVoice::release()
     filter_envelope.release();
 }
 
+void SynthVoice::pan_sample(const float orig, float &sample_left, float &sample_right)
+{
+    sample_left = orig * left_volume;
+    sample_right = orig * right_volume;
+}
+
 inline float note_to_hz(float note)
 {
     return pow(2, note / 12) * 16.352;
@@ -100,6 +106,9 @@ void SynthVoice::set_params(const SynthParams &params)
     distortion = params.distortion;
     env_to_pitch = params.env_to_pitch != 0;
     noise_amount = params.noise_amount;
+
+    left_volume = params.pan < 0.5 ? 1 : 2 - 2 * params.pan;
+    right_volume = params.pan > 0.5 ? 1 : 2 * params.pan;
 
     volume *= params.volume;
 }
@@ -163,25 +172,40 @@ void Synth::set_send_delay_params(float feedback, float delay_ms)
     send_delay.setTime(delay_ms);
 }
 
-void Synth::process(float *buffer, int buffer_size)
+void Synth::process(float *buffer_left, float *buffer_right, int buffer_size)
 {
     voice_lock.lock();
     for (int i = 0; i < buffer_size; i++)
     {
-        float sample = 0;
+        float sample_left = 0;
+        float sample_right = 0;
         float delay_send_sample = 0;
         for (int vi = voices.size() - 1; vi >= 0; vi--)
         {
             auto &voice = voices[vi];
             const auto voice_sample = voice.process();
-            sample += voice_sample;
+            float panned_left, panned_right;
+            voice.pan_sample(voice_sample, panned_left, panned_right);
+            sample_left += panned_left;
+            sample_right += panned_right;
             delay_send_sample += voice_sample * send_delay_amounts[voice.channel];
             if (voice.ended())
             {
                 voices.erase(voices.begin() + vi);
             }
         }
-        buffer[i] = sample + send_delay.process(delay_send_sample);
+        const auto delay_output = send_delay.process(delay_send_sample);
+        if (buffer_right)
+        {
+            buffer_left[i] = sample_left + delay_output;
+            buffer_right[i] = sample_right + delay_output;
+        }
+        else
+        {
+            buffer_left[i] = sample_left + delay_output;
+            i++;
+            buffer_left[i] = sample_right + delay_output;
+        }
     }
     voice_lock.unlock();
 }

@@ -112,7 +112,7 @@ int main(int argc, char **argv)
 
     al_install_audio();
     al_reserve_samples(0);
-    ALLEGRO_AUDIO_STREAM *audio_stream = al_create_audio_stream(8, 1024, 44100, ALLEGRO_AUDIO_DEPTH_FLOAT32, ALLEGRO_CHANNEL_CONF_1);
+    ALLEGRO_AUDIO_STREAM *audio_stream = al_create_audio_stream(8, 1024, 44100, ALLEGRO_AUDIO_DEPTH_FLOAT32, ALLEGRO_CHANNEL_CONF_2);
     ALLEGRO_MIXER *mixer = al_get_default_mixer();
     al_attach_audio_stream_to_mixer(audio_stream, mixer);
 

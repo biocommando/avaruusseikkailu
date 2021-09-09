@@ -107,6 +107,8 @@ class SynthVst : public AudioEffectX
             delay_time = 1000 * value;
         if (name == "delfb")
             delay_feed = value;
+        if (name == "pan")
+            currentParams.pan = value;
 
         if (set_instrument)
         {
@@ -128,7 +130,7 @@ class SynthVst : public AudioEffectX
     }
 
 public:
-    SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 26), synth(sampleRate)
+    SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 27), synth(sampleRate)
     {
         setNumInputs(2);          // stereo in
         setNumOutputs(2);         // stereo out
@@ -160,6 +162,7 @@ public:
         add_param("deltm", 1);
         add_param("delfb", 0.5);
         add_param("volume", 0.5);
+        add_param("pan", 0.5);
         // This can be used to identify correct instrument instances from the binary chunk
         add_param("my_id", 0);
         sync_params();
@@ -225,8 +228,8 @@ public:
 
     void processReplacing(float **inputs, float **outputs, VstInt32 sampleFrames)
     {
-        synth.process(outputs[0], sampleFrames);
-        memcpy(outputs[1], outputs[0], sizeof(float) * sampleFrames);
+        synth.process(outputs[0], outputs[1], sampleFrames);
+        //memcpy(outputs[1], outputs[0], sizeof(float) * sampleFrames);
     }
 
     float getParameter(VstInt32 index)
@@ -270,6 +273,23 @@ public:
             }
             else if (param.name == "o1tune" || param.name == "o2tune")
                 float2string(-24 + 48 * param.value, text, kVstMaxParamStrLen);
+            else if (param.name == "pan")
+            {
+                if (param.value == 0.5)
+                {
+                    strcpy(text, "center");
+                }
+                else if (param.value < 0.5)
+                {
+                    int percent = 200 * (0.5 - param.value);
+                    strcpy(text, ("L" +  std::to_string(percent) + "%").c_str());
+                }
+                else
+                {
+                    int percent = 200 * (param.value - 0.5);
+                    strcpy(text, ("R" +  std::to_string(percent) + "%").c_str());
+                }
+            }
             else if (param.name == "my_id")
                 strcpy(text, std::to_string((int)(16 * param.value * .99)).c_str());
             else

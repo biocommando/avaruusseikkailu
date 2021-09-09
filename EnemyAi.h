@@ -175,16 +175,18 @@ inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
 inline void tank_ai(GameObject &tank, GameObject &player)
 {
     const auto distance = tank.get_distance(player);
-    const auto shooting_range = /*tank.get_y() + 20 > player.get_y() &&*/ distance < 512;
+    const auto shooting_range = distance < 512;
     bool target_in_sights = false;
     if (shooting_range && tank.get_flag(ai_sees_player_flag))
     {
         const auto dx = fabs(player.get_x() - tank.get_x());
         const auto current_dir = tank.get_direction() - (int)(tank.get_direction() / (2 * ALLEGRO_PI)) * 2 * ALLEGRO_PI;
-        const auto target_dir =
+        auto target_dir =
             tank.get_y() > player.get_y()
                 ? asin(dx / tank.get_distance(player))
                 : acos(dx / tank.get_distance(player)) + ALLEGRO_PI / 2;
+        if (tank.get_x() > player.get_x())
+            target_dir = -target_dir;
         const auto dir_diff = target_dir - current_dir;
         if (fabs(dir_diff) > 0.1)
             tank.set_direction(current_dir + (target_dir - current_dir) * 0.2);

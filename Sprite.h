@@ -199,6 +199,9 @@ public:
         else
             al_draw_tinted_scaled_rotated_bitmap_region(bitmap, sx, sy, w, h, al_map_rgb_f(1, 1, 1), w / 2, h / 2, x, y, zoom, zoom, angle, flip);
     }
+
+    float get_w() const { return w; }
+    float get_h() const { return h; }
 };
 
 class TileSprite

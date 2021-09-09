@@ -19,10 +19,10 @@ enum GameObjectType
     GameObjectType_ENM_SHOT,
 };
 
-constexpr float gravity = 0.1f;
+constexpr float gravity = 0.06f;
 constexpr float acceleration_damping = 0.5f;
 constexpr float acceleration_max = 0.3f;
-constexpr float speed_limit_in_one_dir = 4;
+constexpr float speed_limit_in_one_dir = 3;
 
 class GameObject
 {
@@ -36,15 +36,19 @@ class GameObject
     float direction_angle = 0;
     GameObjectType type;
     TileMap &tiles;
-    float health = 1;
+    float health = 100;
+    float armor = 1;
     std::map<int, int> counters;
     std::map<int, int> flags;
     bool affected_by_gravity = true;
     float acceleration = 0;
+    bool is_shot;
+    float shot_trail[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 public:
     GameObject(Sprite &sprite, GameObjectType type, float hitbox_w, float hitbox_h, TileMap &tiles)
-        : sprite(sprite), hitbox_w(hitbox_w), hitbox_h(hitbox_h), type(type), tiles(tiles)
+        : sprite(sprite), hitbox_w(hitbox_w), hitbox_h(hitbox_h), type(type), tiles(tiles),
+          is_shot(type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT)
     {
     }
 
@@ -68,6 +72,16 @@ public:
     void set_health(float h)
     {
         health = h;
+    }
+
+    void set_armor(float r)
+    {
+        armor = r;
+    }
+
+    void deal_damage(float damage)
+    {
+        health -= damage * armor;
     }
 
     float get_health()
@@ -139,13 +153,15 @@ public:
         sprite.set_angle(direction_angle);
     }
 
-    float get_direction()
+    float get_direction() const
     {
         return direction_angle;
     }
 
-    float get_dx() { return dx; }
-    float get_dy() { return dy; }
+    float get_dx() const { return dx; }
+    float get_dy() const { return dy; }
+
+    bool get_is_shot() const { return is_shot; }
 
     GameObjectType get_type()
     {
@@ -160,7 +176,6 @@ public:
             if (counter.second > 0)
                 counter.second--;
         }
-        const auto is_shot = type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT;
         if (is_shot)
         {
             if (counters[alive_counter_id] == 0)
@@ -173,8 +188,12 @@ public:
         {
             if (dx > speed_limit_in_one_dir)
                 dx = speed_limit_in_one_dir;
+            else if (dx < -speed_limit_in_one_dir)
+                dx = -speed_limit_in_one_dir;
             if (dy > speed_limit_in_one_dir)
                 dy = speed_limit_in_one_dir;
+            else if (dy < -speed_limit_in_one_dir)
+                dy = -speed_limit_in_one_dir;
         }
 
         if (acceleration > 0)
@@ -199,7 +218,7 @@ public:
             bool did_bounce = false;
             if (tiles.check_collision(x, new_y, hitbox_w, hitbox_h) != 0)
             {
-                if (type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT)
+                if (is_shot)
                 {
                     if (flags[bouncy_flag])
                     {
@@ -219,7 +238,7 @@ public:
             new_x = x + ddx;
             if (tiles.check_collision(new_x, new_y, hitbox_w, hitbox_h) != 0)
             {
-                if (type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT)
+                if (is_shot)
                 {
                     if (flags[bouncy_flag])
                     {
@@ -232,7 +251,6 @@ public:
                 else
                 {
                     dx = 0;
-                    dy *= 0.9; // friction
                 }
                 new_x = x;
             }
@@ -271,6 +289,35 @@ public:
 
     void draw()
     {
+        if (!is_shot)
+        {
+            const auto sprite_top = y - sprite.get_h() / 2 - camera_offset_y;
+            for (int i = health / 20; i > 0; i--)
+            {
+                const auto col = al_map_rgb_f((5 - i) / 5.0f, i / 5.0f, 0);
+                const auto x0 = x - 15 + i * 5 - camera_offset_x;
+                al_draw_filled_rectangle(x0, sprite_top - 8, x0 + 3, sprite_top - 3, col);
+            }
+        }
+        else
+        {
+            for (int i = 3; i >= 0; i--)
+            {
+                if (shot_trail[2 * i] == 0)
+                    continue;
+                const auto col = al_map_rgb_f(0.2 + (3 - i) * random(0.05, 0.2),
+                                              (3 - i) * random(0.05, 0.2), 0);
+                al_draw_filled_circle(shot_trail[2 * i] - camera_offset_x,
+                                      shot_trail[2 * i + 1] - camera_offset_y, 1 + (3 - i) * 0.5, col);
+                if (i < 3)
+                {
+                    shot_trail[2 * (i + 1)] = shot_trail[2 * i];
+                    shot_trail[2 * (i + 1) + 1] = shot_trail[2 * i + 1];
+                }
+            }
+            shot_trail[0] = x + random(-1, 1);
+            shot_trail[1] = y + random(-1, 1);
+        }
         sprite.draw(x, y);
     }
 

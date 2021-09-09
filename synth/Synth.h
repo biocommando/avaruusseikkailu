@@ -21,6 +21,7 @@ struct SynthParams
     float noise_amount;
     float filter_mod_amount;
     float volume;
+    float pan;
 };
 
 class SynthVoice
@@ -41,6 +42,8 @@ class SynthVoice
     float osc2_base_freq;
     float noise_amount;
     float filter_mod_amount;
+    float left_volume;
+    float right_volume;
 
 public:
     int key;
@@ -50,6 +53,8 @@ public:
     SynthVoice(float sample_rate, int key, int channel);
 
     float process();
+
+    void pan_sample(const float orig, float &sample_left, float &sample_right);
 
     void release();
 
@@ -78,5 +83,5 @@ public:
 
     void set_send_delay_params(float feedback, float delay_ms);
 
-    void process(float *buffer, int buffer_size);
+    void process(float *buffer_left, float *buffer_right, int buffer_size);
 };

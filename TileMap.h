@@ -114,7 +114,7 @@ class TileMap
                         combined_tiles[i] = true;
                         if (x2 != x + 1 || properties != tile.get_properties())
                         {
-                            if (x1 != -1)
+                            if (x1 != -1 && properties != 0)
                             {
                                 logical_tiles.push_back(TileBase(x1, y, x2, y + 32 + 1, properties));
                             }
@@ -133,16 +133,16 @@ class TileMap
         }
         for (int i = 0; i < tiles.size(); i++)
         {
-            if (!combined_tiles[i])
+            const auto &tile = tiles[i];
+            if (!combined_tiles[i] && tile.get_properties() != 0)
             {
-                const auto &tile = tiles[i];
                 logical_tiles.push_back(TileBase(tile.get_x(), tile.get_y(), tile.get_x2(),
                                                  tile.get_y2(), tile.get_properties()));
             }
         }
         std::cout << "Tile count: " << std::to_string(tiles.size())
-             << ", Combined count: " << std::to_string(logical_tiles.size())
-              << ", Compression %: " << std::to_string(100 - 100 * logical_tiles.size() / tiles.size()) <<'\n';
+                  << ", Combined count: " << std::to_string(logical_tiles.size())
+                  << ", Compression %: " << std::to_string(100 - 100 * logical_tiles.size() / tiles.size()) << '\n';
     }
 
 public:

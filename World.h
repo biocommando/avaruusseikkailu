@@ -10,7 +10,7 @@
 #include "Explosions.h"
 #include "WeaponProfile.h"
 #include "flag_id.h"
-#include "AlienShipAi.h"
+#include "EnemyAi.h"
 #include "EnemyProfile.h"
 #include "KeyConfig.h"
 #include "MissionConfig.h"
@@ -41,7 +41,7 @@ public:
     // 0 = succeeded, -1 = failed, > 0 = goals unmet
     int goal_status = 0;
 
-    World() : key_config("config/key_config.ini")
+    World() : key_config("config/key_config.ini"), midi_tracker(44100)
     {
         text_drawer.set_centered(true);
     }
@@ -99,12 +99,14 @@ public:
         spawn_enemies();
     }
 
-    void create_shot(int weapon_profile, GameObject &parent)
+    void create_shot(GameObject &parent, int weapon_profile = -1)
     {
+        if (weapon_profile == -1)
+            weapon_profile = parent.get_flag(weapon_flag);
         WeaponProfile &wp = weapon_profiles[weapon_profile];
         if (wp.sound > -1)
             midi_tracker.trigger_sfx(wp.sound_key, wp.sound);
-        auto parentActive = parent.get_type() != GameObjectType_PLAYER_SHOT && parent.get_type() != GameObjectType_ENM_SHOT;
+        auto parentActive = !parent.get_is_shot();
         if (parentActive)
             parent.set_counter(reload_counter_id, wp.reload);
 
@@ -151,10 +153,10 @@ public:
             {
                 auto plr_ship_sprite = load_sprite("config/space_ship_anim.ini");
                 plr_ship_sprite.set_animation(1);
-                auto &plr = game_object_holder.add_object(new GameObject(plr_ship_sprite, GameObjectType_PLAYER, 32, 32, tile_map));
+                auto &plr = game_object_holder.add_object(new GameObject(plr_ship_sprite, GameObjectType_PLAYER, 24, 24, tile_map));
                 player = &plr;
-                player->set_position(iop.x + 16, iop.y + 16);
-                player->set_health(100);
+                player->set_position(iop.x + 20, iop.y + 20);
+                player->set_flag(weapon_flag, 1);
             }
             else if (enemies.find(iop.type) != enemies.end())
             {
@@ -167,7 +169,7 @@ public:
 
                 auto &enemy = game_object_holder.add_object(new GameObject(sprites[e.sprite], type, e.hitbox_w, e.hitbox_h, tile_map));
                 enemy.set_position(iop.x + 32 - e.hitbox_w / 2, iop.y + 32 - e.hitbox_h / 2);
-                enemy.set_health(e.health);
+                enemy.set_armor(100.0f / e.health);
                 enemy.set_flag(weapon_flag, e.weapon);
             }
         }
@@ -201,7 +203,7 @@ public:
                         tank_ai(*enm, *player);
                     if (enm->get_flag(ai_wants_to_shoot_flag))
                     {
-                        create_shot(enm->get_flag(weapon_flag), *enm);
+                        create_shot(*enm);
                     }
                 }
             }
@@ -218,7 +220,7 @@ public:
                     if (plr_shot->collides(*enm))
                     {
                         plr_shot->set_health(-1);
-                        enm->set_health(enm->get_health() - plr_shot->get_flag(damage_flag));
+                        enm->deal_damage(plr_shot->get_flag(damage_flag));
                         break;
                     }
                 }
@@ -232,7 +234,7 @@ public:
                 if (player->collides(*enm_shot))
                 {
                     enm_shot->set_health(-1);
-                    player->set_health(player->get_health() - enm_shot->get_flag(damage_flag));
+                    player->deal_damage(enm_shot->get_flag(damage_flag));
                     break;
                 }
             }
@@ -244,8 +246,8 @@ public:
         text_drawer.draw_timed_permanent_texts();
         if (player)
         {
-            text_drawer.set_color(127, 0, 0);
-            text_drawer.draw_text(player->get_x(), player->get_y() - 34, std::to_string((int)player->get_health()));
+            //text_drawer.set_color(127, 0, 0);
+            //text_drawer.draw_text(player->get_x(), player->get_y() - 34, std::to_string((int)player->get_health()));
             //text_drawer.draw_text(player->get_x(), player->get_y() + 32, weapon_profiles[1].name);
         }
 
@@ -259,7 +261,7 @@ public:
                                         world.explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), explosion_intensity));
                                         if (obj->get_flag(number_of_child_particles_flag) > 0)
                                         {
-                                            world.create_shot(obj->get_flag(child_particle_id_flag), *obj);
+                                            world.create_shot(*obj, obj->get_flag(child_particle_id_flag));
                                         }
 
                                         for (int enm_type = GameObjectType_ENM_SHIP; enm_type <= GameObjectType_ENM_TANK; enm_type++)
@@ -271,7 +273,7 @@ public:
                                             {
                                                 if (enm->get_distance_sqr(*obj) < blast_radius_sqr)
                                                 {
-                                                    enm->set_health(enm->get_health() - obj->get_flag(damage_flag));
+                                                    enm->deal_damage(obj->get_flag(damage_flag));
                                                 }
                                             }
                                         }
@@ -286,13 +288,13 @@ public:
                                         world.explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), explosion_intensity));
                                         if (obj->get_flag(number_of_child_particles_flag) > 0)
                                         {
-                                            world.create_shot(obj->get_flag(child_particle_id_flag), *obj);
+                                            world.create_shot(*obj, obj->get_flag(child_particle_id_flag));
                                         }
 
                                         float blast_radius_sqr = obj->get_flag(blast_radius_flag);
                                         blast_radius_sqr *= blast_radius_sqr;
                                         if (world.player && world.player->get_distance_sqr(*obj) < blast_radius_sqr)
-                                            world.player->set_health(world.player->get_health() - obj->get_flag(damage_flag));
+                                            world.player->deal_damage(obj->get_flag(damage_flag));
                                     });
         game_object_holder.clean_up(GameObjectType_PLAYER, [&world](GameObject *obj)
                                     {
@@ -338,7 +340,7 @@ public:
             last_thrust_key_status = thrust_key;
         }
         if (key_status[key_config.up])// && player->get_speed_in_direction() < 10)
-            player->accelerate_in_direction(0.15);
+            player->accelerate_in_direction(0.1);
             //player->add_speed_in_direction(0.3);
         if (key_status[key_config.left])
         {
@@ -372,7 +374,7 @@ public:
         }
         if (key_status[key_config.shoot] && player->get_counter(reload_counter_id) == 0)
         {
-            create_shot(1, *player);
+            create_shot(*player);
         }
     }
 };

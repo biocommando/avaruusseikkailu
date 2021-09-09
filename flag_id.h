@@ -10,6 +10,8 @@ constexpr int damage_flag = 303;
 constexpr int bouncy_flag = 304;
 constexpr int weapon_flag = 305;
 
+constexpr int shot_trail_pos_xy = 310; // 310 - 320
+
 // AI flags
 
 constexpr int ai_change_direction_counter_id = 1001;
