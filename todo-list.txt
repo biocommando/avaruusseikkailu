@@ -1,0 +1,29 @@
+[ ] = ei tehty, [x] = tehty, [/] = osittain tehty, [-] = ei tehdä
+
+Featuret:
+[/] Viholliset
+[x]	* alus
+[x]	* sotilas
+[x]	* tankki / turret
+[ ]	* tehdas, joka luo lisää aluksia / sotilaita
+[x] Aseprofiilit
+[ ] Poimittavat aseet / energia yms.
+[ ] Tuhoutuva maasto
+[ ] Räjähdys kappaleiksi
+[/] Tile boundary check before tile collision check?
+[x] Tehtävät
+[x] Äänet
+[x] Musiikki
+[ ] Taustagrafiikka
+[x] Konfiguroitavat näppäimet
+[/] Menu
+[ ] Tallennus
+[/] HUD
+[ ] Vaihdettavat aseet
+[ ] Ammusten määrä
+[ ] Mission briefing / end -näyttö
+[ ] Liikkuva maasto
+[ ] Kenttäeditori
+
+Bugit:
+[ ] Turrettien suunta vasemmalle ammuttaessa väärä
