@@ -24,6 +24,7 @@ Featuret:
 [ ] Mission briefing / end -näyttö
 [ ] Liikkuva maasto
 [ ] Kenttäeditori
+[ ] Musiikkiraitojen stereopannaus
 
 Bugit:
 [ ] Turrettien suunta vasemmalle ammuttaessa väärä
