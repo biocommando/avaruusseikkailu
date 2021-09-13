@@ -1,0 +1,210 @@
+<html>
+
+<head>
+    <style>
+        body {
+            background-color: darkslategray;
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            display: inline-block;
+            background-color: darkgray;
+            vertical-align: bottom;
+            font-family: consolas;
+            font-weight: bold;
+            font-size: 8px;
+            white-space: normal;
+        }
+
+        .wall {
+            background-color: blue;
+        }
+
+        .row {
+            display: block;
+        }
+
+        .cursor {
+            border-style: dashed;
+        }
+
+        #tileContainer {
+            max-height: 1000px;
+            overflow: scroll;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+
+<body>
+    <button onclick="promptDimensions()">Set dimensions</button>
+    Tool:
+    <select id="clickType">
+        <option value="select">select</option>
+        <option value="paint">paint</option>
+        <option value="fill">fill</option>
+    </select>
+    Paint type:
+    <select id="paintType">
+        <option value="">Background</option>
+        <option value="wall">Wall</option>
+    </select>
+    <div id="tileContainer">
+
+    </div>
+    Add object:
+    <select id="objectSelect" onchange="addObject()">
+        <option value="none">select...</option>
+        <option value="player">player</option>
+    </select>
+    <br>
+    <textarea id="objectList" cols="20" rows="8"></textarea>
+    <br>
+    <button onclick="setObjectList()">Set objects</button>
+    <hr />
+    <button onclick="load()">Load project</button>
+    <button onclick="save()">Save project</button>
+    <button onclick="exportIni()">Export ini file</button>
+    <script>
+        let w, h
+        let cursor = { x: 0, y: 0 }
+        let map = []
+
+        let objectTypes = [{ name: 'player', id: 0 }]
+        fetch('/api/object-types')
+            .then(x => x.json())
+            .then(x => {
+                objectTypes = [...objectTypes, ...x]
+                objectSelect.innerHTML += x.map(y => `<option value="${y.name}">${y.name}</option>`)
+            })
+
+        function setDimensions(_w, _h) {
+            if (_w < w) map.splice(_w - 1)
+            if (_h < h) map.forEach(arr => arr.splice(_h - 1))
+            w = _w
+            h = _h
+            //map = []
+            for (let x = 0; x < w; x++) {
+                if (map[x] === undefined) map[x] = []
+                for (let y = 0; y < h; y++)
+                    if (map[x][y] === undefined) map[x][y] = { type: '', objects: [] }
+            }
+        }
+
+        function promptDimensions() {
+            const dims = prompt('Dimensions? (note: map will be cleared)', [w, h].join(', '))
+            if (dims) {
+                const [x, y] = dims.split(',').map(Number)
+                setDimensions(x, y)
+                renderMap()
+            }
+        }
+
+        function renderMap() {
+            let html = ''
+            for (let y = 0; y < h; y++) {
+                html += '<div class="row">'
+                for (let x = 0; x < w; x++) {
+                    const cursclass = cursor.x === x && cursor.y === y ? 'cursor' : ''
+                    html += `<button class="cell ${map[x][y].type} ${cursclass}" onclick="cellClick(${x},${y})">`
+                    html += `${map[x][y].objects.join('<br/>')}</button>`
+                }
+                html += '</div>'
+            }
+            tileContainer.innerHTML = html
+        }
+
+        function cellClick(x, y) {
+            if (clickType.value === 'paint') {
+                map[x][y].type = paintType.value
+            } else if (clickType.value === 'fill') {
+                const x0 = Math.min(x, cursor.x)
+                const y0 = Math.min(y, cursor.y)
+                const x1 = Math.max(x, cursor.x)
+                const y1 = Math.max(y, cursor.y)
+                for (let xx = x0; xx <= x1; xx++)
+                    for (let yy = y0; yy <= y1; yy++) {
+                        map[xx][yy].type = paintType.value
+                    }
+            }
+            objectList.value = map[x][y].objects.join('\n')
+            cursor = { x, y }
+            renderMap()
+        }
+
+        function setObjectList() {
+            map[cursor.x][cursor.y].objects = objectList.value.split(/\r?\n/).filter(x => x.trim() !== '')
+            renderMap()
+        }
+
+        function addObject() {
+            if (objectSelect.value !== 'none')
+                objectList.value += '\n' + objectSelect.value
+            objectSelect.value = 'none'
+        }
+
+        let filename = 'map1.json'
+
+        function load() {
+            const file = prompt('file name?', filename)
+            if (file) {
+                filename = file
+                fetch('/map-projects/' + file)
+                    .then(x => x.json())
+                    .then(loaded => {
+                        w = loaded.w
+                        h = loaded.h
+
+                        for (let x = 0; x < w; x++) {
+                            for (let y = 0; y < h; y++) {
+                                loaded.map[x][y].objects = loaded.map[x][y].objects.map(o => objectTypes.find(ot => ot.id === o).name)
+                            }
+                        }
+                        map = loaded.map
+                        renderMap()
+                    })
+            }
+        }
+
+        function save() {
+            const file = prompt('file name?', filename)
+            if (file) {
+                filename = file
+                const mapcpy = []
+                for (let x = 0; x < w; x++) {
+                    mapcpy[x] = []
+                    for (let y = 0; y < h; y++) {
+                        mapcpy[x][y] = { ...map[x][y] }
+                        mapcpy[x][y].objects = mapcpy[x][y].objects.map(o => objectTypes.find(ot => ot.name === o).id)
+                    }
+                }
+
+                fetch('/api/save/' + file, { method: 'POST', body: JSON.stringify({ w, h, map: mapcpy }) })
+            }
+        }
+
+        function exportIni() {
+            const file = prompt('file name?', filename)
+            if (file) {
+                const flatMap = []
+                for (let x = 0; x < w; x++) {
+                    for (let y = 0; y < h; y++) {
+                        flatMap.push({
+                            x, y, type: map[x][y].type,
+                            objectIds: map[x][y].objects.map(o => objectTypes.find(ot => ot.name === o).id)
+                        })
+                    }
+                }
+                //filename = file
+                fetch('/api/export/' + file + '.ini', { method: 'POST', body: JSON.stringify(flatMap) })
+            }
+        }
+
+        setDimensions(30, 30)
+        renderMap()
+    </script>
+</body>
+
+</html>
