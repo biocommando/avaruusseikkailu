@@ -178,12 +178,20 @@ map.forEach((point, i) => {
             result.push({ description: 'object', x: point.x, y: point.y, type: 3 })
         else if (point.color.join('-') === '255-0-255')
             result.push({ description: 'object', x: point.x, y: point.y, type: 0 })
+        else if (point.color.join('-') === '127-127-127')
+            result.push({ description: 'object', x: point.x, y: point.y, type: 101 })
+        else if (point.color.join('-') === '200-200-200')
+            result.push({ description: 'object', x: point.x, y: point.y, type: 102 })
+        else if (point.color.join('-') === '220-220-220')
+            result.push({ description: 'object', x: point.x, y: point.y, type: 103 })
+        else if (point.color.join('-') === '100-100-100')
+            result.push({ description: 'object', x: point.x, y: point.y, type: 104 })
     }
 })
 
-//console.log(result)
 let output = `sprite_sheet=sprites/tile01.png\r\nw=32\r\nh=32\r\n`
 
+let prev = { x: -1, sx: -1, sy: -1, y: -1, props: -1 }
 result.forEach(point => {
     if (point.description === 'object') {
         output += `obj_x=${point.x * 32}\r\n`
@@ -192,11 +200,19 @@ result.forEach(point => {
         output += `set object\r\n`
         return;
     }
-    output += `x=${point.x * 32}\r\n`
-    output += `y=${point.y * 32}\r\n`
-    output += `sx=${point.sx * 32}\r\n`
-    output += `sy=${point.sy * 32}\r\n`
-    output += `props=${point.description !== 'background' ? 1 : 0}\r\n`
+    if (point.x !== prev.x)
+        output += `x=${point.x * 32}\r\n`
+    if (point.y !== prev.y)
+        output += `y=${point.y * 32}\r\n`
+
+    if (point.sx !== prev.sx)
+        output += `sx=${point.sx * 32}\r\n`
+    if (point.sy !== prev.sy)
+        output += `sy=${point.sy * 32}\r\n`
+    const props = point.description !== 'background' ? 1 : 0
+    if (props !== prev.props)
+        output += `props=${props}\r\n`
+    prev = { ...point, props }
     output += 'set tile\r\n'
 })
 
@@ -204,4 +220,4 @@ result.forEach(point => {
 
 const fs = require('fs')
 
-fs.writeFileSync('config/' + process.argv[2] + '.ini', output)
+fs.writeFileSync('config/' + process.argv[2] + '.ini', Buffer.from(output))

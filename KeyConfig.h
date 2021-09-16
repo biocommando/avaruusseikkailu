@@ -9,8 +9,9 @@ public:
     int down;
     int left;
     int right;
-    int strafe;
+    int auto_aim;
     int shoot;
+    int inventory;
 
     KeyConfig(const std::string &file)
     {
@@ -24,10 +25,12 @@ public:
                             left = std::stoi(val);
                           if (key == "right")
                             right = std::stoi(val);
-                          if (key == "strafe")
-                            strafe = std::stoi(val);
+                          if (key == "auto_aim")
+                            auto_aim = std::stoi(val);
                           if (key == "shoot")
                             shoot = std::stoi(val);
+                          if (key == "inventory")
+                            inventory = std::stoi(val);
                       },
                       [](const auto &s) {});
         cf.read_config_file(file);

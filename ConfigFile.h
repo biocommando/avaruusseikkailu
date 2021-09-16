@@ -22,6 +22,9 @@ public:
         std::string s;
         while (std::getline(ifs, s))
         {
+            if (s == "" || s[0] == '#')
+                continue;
+
             const auto pos = s.find('=');
 
             if (pos != std::string::npos)

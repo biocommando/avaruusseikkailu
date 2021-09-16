@@ -7,13 +7,13 @@
 #include "Explosions.h"
 #include <functional>
 #include "flag_id.h"
+#include "VisualFx.h"
+#include "SingletonInjector.h"
 
 enum GameObjectType
 {
     GameObjectType_PLAYER,
-    GameObjectType_ENM_SHIP,
-    GameObjectType_ENM_SOLDIER,
-    GameObjectType_ENM_TANK,
+    GameObjectType_ENEMY,
     GameObjectType_COLLECTABLE,
     GameObjectType_PLAYER_SHOT,
     GameObjectType_ENM_SHOT,
@@ -35,7 +35,7 @@ class GameObject
     float hitbox_h = 0;
     float direction_angle = 0;
     GameObjectType type;
-    TileMap &tiles;
+    TileMap *tiles;
     float health = 100;
     float armor = 1;
     std::map<int, int> counters;
@@ -43,13 +43,17 @@ class GameObject
     bool affected_by_gravity = true;
     float acceleration = 0;
     bool is_shot;
-    float shot_trail[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    bool is_collectable;
+    VisualFxTool *vfx_tool;
 
 public:
-    GameObject(Sprite &sprite, GameObjectType type, float hitbox_w, float hitbox_h, TileMap &tiles)
-        : sprite(sprite), hitbox_w(hitbox_w), hitbox_h(hitbox_h), type(type), tiles(tiles),
-          is_shot(type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT)
+    GameObject(Sprite &sprite, GameObjectType type, float hitbox_w, float hitbox_h)
+        : sprite(sprite), hitbox_w(hitbox_w), hitbox_h(hitbox_h), type(type),
+          is_shot(type == GameObjectType_PLAYER_SHOT || type == GameObjectType_ENM_SHOT),
+          is_collectable(type == GameObjectType_COLLECTABLE)
     {
+        vfx_tool = get_singleton<VisualFxTool>();
+        tiles = get_singleton<TileMap>();
     }
 
     void set_position(float x, float y)
@@ -110,6 +114,11 @@ public:
     void set_flag(int id, int value)
     {
         flags[id] = value;
+    }
+
+    void add_to_flag(int id, int value)
+    {
+        flags[id] += value;
     }
 
     int get_flag(int id)
@@ -195,6 +204,10 @@ public:
             else if (dy < -speed_limit_in_one_dir)
                 dy = -speed_limit_in_one_dir;
         }
+        if (is_collectable && y > flags[collectable_original_pos_flag])
+        {
+            dy = -1 - flags[collectable_float_bounce_amount_flag] / 10.0f;
+        }
 
         if (acceleration > 0)
         {
@@ -216,7 +229,7 @@ public:
         {
             new_y = y + ddy;
             bool did_bounce = false;
-            if (tiles.check_collision(x, new_y, hitbox_w, hitbox_h) != 0)
+            if (tiles->check_collision(x, new_y, hitbox_w, hitbox_h) != 0)
             {
                 if (is_shot)
                 {
@@ -236,7 +249,7 @@ public:
                 new_y = y;
             }
             new_x = x + ddx;
-            if (tiles.check_collision(new_x, new_y, hitbox_w, hitbox_h) != 0)
+            if (tiles->check_collision(new_x, new_y, hitbox_w, hitbox_h) != 0)
             {
                 if (is_shot)
                 {
@@ -289,7 +302,7 @@ public:
 
     void draw()
     {
-        if (!is_shot)
+        if (!is_shot && !is_collectable)
         {
             const auto sprite_top = y - sprite.get_h() / 2 - camera_offset_y;
             for (int i = health / 20; i > 0; i--)
@@ -298,25 +311,26 @@ public:
                 const auto x0 = x - 15 + i * 5 - camera_offset_x;
                 al_draw_filled_rectangle(x0, sprite_top - 8, x0 + 3, sprite_top - 3, col);
             }
-        }
-        else
-        {
-            for (int i = 3; i >= 0; i--)
+            if (type == GameObjectType_PLAYER)
             {
-                if (shot_trail[2 * i] == 0)
-                    continue;
-                const auto col = al_map_rgb_f(0.2 + (3 - i) * random(0.05, 0.2),
-                                              (3 - i) * random(0.05, 0.2), 0);
-                al_draw_filled_circle(shot_trail[2 * i] - camera_offset_x,
-                                      shot_trail[2 * i + 1] - camera_offset_y, 1 + (3 - i) * 0.5, col);
-                if (i < 3)
+                const auto sprite_btm = y + sprite.get_h() / 2 - camera_offset_y;
+                const auto col = al_map_rgb_f(.8, .8, 0);
+                auto max = get_flag(player_ammo_amount_flag + get_flag(weapon_flag)) / 5;
+                if (max > 8) max = 8;
+                for (int i = max; i > 0; i--)
                 {
-                    shot_trail[2 * (i + 1)] = shot_trail[2 * i];
-                    shot_trail[2 * (i + 1) + 1] = shot_trail[2 * i + 1];
+                    const auto x0 = x - 15 + i * 3 - camera_offset_x;
+                    al_draw_filled_rectangle(x0, sprite_btm, x0 + 2, sprite_btm + 5, col);
                 }
             }
-            shot_trail[0] = x + random(-1, 1);
-            shot_trail[1] = y + random(-1, 1);
+        }
+        else if (is_shot)
+        {
+            auto &fx = vfx_tool->add(x + random(-1, 1), y + random(-1, 1),
+                                     3, random(0.35, 0.8), random(0.15, 0.6),
+                                     0, randomint(4, 6));
+            VisualFxTool::disappear(fx);
+            VisualFxTool::fade_to_color(fx, 0, 0, 0);
         }
         sprite.draw(x, y);
     }
@@ -328,6 +342,8 @@ public:
     float get_hitbox_w() const { return hitbox_w; }
 
     float get_hitbox_h() const { return hitbox_h; }
+
+    float get_hitbox_max_dim() const { return hitbox_h > hitbox_w ? hitbox_h : hitbox_w; }
 };
 
 class GameObjectHolder
@@ -369,7 +385,7 @@ public:
         }
     }
 
-    void clean_up(GameObjectType category, std::function<void(GameObject *)> onDestroy)
+    void clean_up(GameObjectType category, const std::function<void(GameObject *)> &onDestroy)
     {
         auto &objv = get_category(category);
         for (int i = objv.size() - 1; i >= 0; i--)
@@ -381,6 +397,14 @@ public:
                 onDestroy(obj);
                 delete obj;
             }
+        }
+    }
+
+    void clean_up(const std::vector<GameObjectType> &categories, const std::function<void(GameObject *)> &onDestroy)
+    {
+        for (auto &c : categories)
+        {
+            clean_up(c, onDestroy);
         }
     }
 

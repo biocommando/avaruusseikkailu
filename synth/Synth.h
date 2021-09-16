@@ -84,4 +84,6 @@ public:
     void set_send_delay_params(float feedback, float delay_ms);
 
     void process(float *buffer_left, float *buffer_right, int buffer_size);
+
+    void kill_voices();
 };

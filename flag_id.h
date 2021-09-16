@@ -1,5 +1,11 @@
 #pragma once
 
+constexpr int enemy_type_flag = 10;
+
+constexpr int enemy_type_ship = 1;
+constexpr int enemy_type_soldier = 2;
+constexpr int enemy_type_tank = 3;
+
 constexpr int reload_counter_id = 100;
 constexpr int alive_counter_id = 200;
 
@@ -10,7 +16,17 @@ constexpr int damage_flag = 303;
 constexpr int bouncy_flag = 304;
 constexpr int weapon_flag = 305;
 
-constexpr int shot_trail_pos_xy = 310; // 310 - 320
+constexpr int collectable_type_flag = 400;
+constexpr int collectable_bonus_amount_flag = 401;
+constexpr int collect_sound_id_flag = 402;
+constexpr int collect_sound_key_flag = 403;
+constexpr int collectable_original_pos_flag = 404;
+constexpr int collectable_float_bounce_amount_flag = 405;
+
+constexpr int player_coins_flag = 1100;
+constexpr int player_owns_weapon_flag = 1200;
+constexpr int player_ammo_amount_flag = 1300;
+constexpr int player_weapon_list_flag = 1400;
 
 // AI flags
 
@@ -46,3 +62,5 @@ constexpr int sfx_laser_2 = 7;
 
 constexpr int sfx_laser_key_min = 48;
 constexpr int sfx_laser_key_max = 52;
+
+constexpr int sfx_select = 11;

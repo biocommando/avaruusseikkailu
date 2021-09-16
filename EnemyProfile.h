@@ -11,6 +11,7 @@ public:
     int health;
     int hitbox_w;
     int hitbox_h;
+    bool hitbox_from_sprite = true;
     float sprite_zoom = -1;
     std::string type;
 
@@ -33,9 +34,15 @@ public:
                           if (key == "weapon")
                               m[id].weapon = std::stoi(val);
                           if (key == "hitbox_w")
+                          {
                               m[id].hitbox_w = std::stoi(val);
+                              m[id].hitbox_from_sprite = false;
+                          }
                           if (key == "hitbox_h")
+                          {
                               m[id].hitbox_h = std::stoi(val);
+                              m[id].hitbox_from_sprite = false;
+                          }
                           if (key == "sprite_zoom")
                               m[id].sprite_zoom = std::stof(val);
                       },

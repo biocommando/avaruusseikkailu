@@ -172,6 +172,13 @@ void Synth::set_send_delay_params(float feedback, float delay_ms)
     send_delay.setTime(delay_ms);
 }
 
+void Synth::kill_voices()
+{
+    voice_lock.lock();
+    voices.clear();
+    voice_lock.unlock();
+}
+
 void Synth::process(float *buffer_left, float *buffer_right, int buffer_size)
 {
     voice_lock.lock();

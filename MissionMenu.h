@@ -3,6 +3,9 @@
 #include "allegro5/allegro.h"
 #include "allegro5/allegro_image.h"
 #include "allegro5/allegro_font.h"
+#include "allegro5/allegro_audio.h"
+
+#include "MidiTracker.h"
 
 #include "TextDrawer.h"
 #include "MissionConfig.h"
@@ -16,11 +19,23 @@ inline int show_mission_selector(std::vector<MissionConfig> &mission_configs, AL
     TextDrawer text_drawer;
     text_drawer.set_use_camera_offset(false);
 
+    MidiTracker midi_tracker(44100);
+    midi_tracker.read_midi_file("sounds/dark_ambient_theme.mid");
+
     while (true)
     {
         ALLEGRO_EVENT event;
         al_wait_for_event(queue, &event);
 
+        if (event.type == ALLEGRO_EVENT_AUDIO_STREAM_FRAGMENT)
+        {
+            auto stream = (ALLEGRO_AUDIO_STREAM *) event.any.source;
+            float *buf = (float*)al_get_audio_stream_fragment(stream);
+            if (buf) {
+                midi_tracker.process_buffer(buf, 1024);
+                al_set_audio_stream_fragment(stream, buf);
+            }
+        }
         if (event.type == ALLEGRO_EVENT_TIMER)
         {
             al_clear_to_color(al_map_rgb_f(0, 0, 0));

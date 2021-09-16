@@ -9,6 +9,7 @@
 
 struct MidiEvent
 {
+    bool end_of_track;
     unsigned char data[3];
     unsigned time_delta;
 };
@@ -22,6 +23,7 @@ class MidiTracker
     int samples_per_tick = 0;
     unsigned pos = 0;
     int tick_pos = 0;
+    int tracks_at_end = 0;
     std::vector<std::vector<MidiEvent>> tracks;
     std::vector<unsigned> next_track_event_at;
     std::vector<unsigned> next_track_event_idx;
@@ -104,11 +106,16 @@ class MidiTracker
                 read_amt += length + data_len;
                 fseek(f, data_len, SEEK_CUR);
             }
+            // Meta event
             else if (event_data == 0xFF)
             {
                 unsigned char type;
                 fread(&type, 1, 1, f);
                 auto data_len = read_variable_length_quantity(length);
+                if (type == 0x2F)
+                {
+                    events.push_back(MidiEvent{true});
+                }
                 //std::cout << "Skip bytes 1+" << std::to_string(length) << '+' << std::to_string(data_len) << "\n";
                 read_amt += length + data_len + 1;
                 fseek(f, data_len, SEEK_CUR);
@@ -141,7 +148,7 @@ class MidiTracker
                 else
                 {
                     //std::cout << "Midi event add: " << std::to_string(event_data) << "\n";
-                    MidiEvent e;
+                    MidiEvent e{false};
                     e.data[0] = event_data;
                     fread(e.data + 1, 1, 2, f);
                     e.time_delta = time_delta;
@@ -278,6 +285,28 @@ public:
         synth.set_send_delay_params(0.5, 100);
     }
 
+    std::vector<unsigned> get_track_pos_marker()
+    {
+        std::vector<unsigned> ret;
+        for (int trk = 0; trk < tracks.size(); trk++)
+        {
+            ret.push_back(next_track_event_at[trk]);
+            ret.push_back(next_track_event_idx[trk]);
+        }
+        ret.push_back(pos);
+        return ret;
+    }
+
+    void set_track_pos_marker(const std::vector<unsigned> &marker)
+    {
+        for (int trk = 0; trk < tracks.size(); trk++)
+        {
+            next_track_event_at[trk] = marker[2 * trk];
+            next_track_event_idx[trk] = marker[2 * trk + 1];
+        }
+        pos = marker.back();
+    }
+
     void load_sound_effects(const std::string &file)
     {
         read_metadata(file, true);
@@ -290,6 +319,12 @@ public:
         unsigned short num_tracks;
         unsigned short division;
         unsigned short format;
+        synth.kill_voices();
+        tracks.clear();
+        next_track_event_at.clear();
+        next_track_event_idx.clear();
+        tracks_at_end = 0;
+        pos = 0;
         while (!feof(f))
         {
             std::string chunk_type;
@@ -298,7 +333,6 @@ public:
             if (feof(f))
                 break;
             const auto current_pos = ftell(f);
-            //std::cout << "Found hdr: " << chunk_type << " at " << std::to_string(current_pos) << ", hdr size = " << std::to_string(length) << "\n";
             if (chunk_type == "MThd")
             {
                 fread(&format, sizeof(unsigned short), 1, f);
@@ -310,9 +344,8 @@ public:
                 ticks_per_quarter_note = division;
                 auto ticks_per_second = tempo / 60.0f * ticks_per_quarter_note;
                 samples_per_tick = sample_rate / ticks_per_second;
-                //samples_per_tick *= 2; // Stereo audio has 2 words per sample
-                std::cout << "Tempo: " << std::to_string(tempo) << "\n";
-                std::cout << "Samples per tick: " << std::to_string(samples_per_tick) << "\n";
+                /*std::cout << "Tempo: " << std::to_string(tempo) << "\n";
+                std::cout << "Samples per tick: " << std::to_string(samples_per_tick) << "\n";*/
             }
             else if (chunk_type == "MTrk")
             {
@@ -382,7 +415,8 @@ public:
                         std::cout << ((evt.data[0] & 0xF0) == 0b10000000 ? "note off" : "note on") << ", key="
                             << std::to_string(evt.data[1]) << ", vel=" << std::to_string(evt.data[2])
                             << ". TD=" << std::to_string(evt.time_delta) << ", instrument:" << std::to_string(evt.data[0]&0xF) << "\n";*/
-                        synth.handle_midi_event(events[next_track_event_idx[trk]].data);
+                        if (!events[next_track_event_idx[trk]].end_of_track)
+                            synth.handle_midi_event(events[next_track_event_idx[trk]].data);
                         next_track_event_idx[trk]++;
                         if (next_track_event_idx[trk] < events.size())
                         {
@@ -391,15 +425,27 @@ public:
                         else
                         {
                             next_track_event_at[trk] = ~0;
+                            tracks_at_end++;
                         }
                     }
                 }
                 pos++;
+                if (tracks_at_end == tracks.size())
+                {
+                    //std::cout << "all tracks ended\n";
+                    for (int trk = 0; trk < tracks.size(); trk++)
+                    {
+                        next_track_event_at[trk] = tracks[trk][0].time_delta;
+                        next_track_event_idx[trk] = 0;
+                    }
+                    pos = 0;
+                    tracks_at_end = 0;
+                }
             }
             // in stereo audio every other sample is for left and every other for right
             // so let's make sure that we run any logic only when index is at left channel
             // so we don't need to care about misalignment of the channels
-            i++; 
+            i++;
         }
         synth.process(&buf[process_at_idx], nullptr, size - process_at_idx);
     }

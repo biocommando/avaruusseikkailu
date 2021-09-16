@@ -62,7 +62,11 @@
     <br>
     <textarea id="objectList" cols="20" rows="8"></textarea>
     <br>
-    <button onclick="setObjectList()">Set objects</button>
+    <button onclick="setObjectList()">Set</button>
+    <button onclick="clearObjectList()">Clear</button>
+    <button onclick="copyObjectList()">Copy</button>
+    <button onclick="copyObjectList(true)">Cut</button>
+    <button onclick="pasteObjectList()">Paste</button>
     <hr />
     <button onclick="load()">Load project</button>
     <button onclick="save()">Save project</button>
@@ -136,6 +140,26 @@
 
         function setObjectList() {
             map[cursor.x][cursor.y].objects = objectList.value.split(/\r?\n/).filter(x => x.trim() !== '')
+            renderMap()
+        }
+
+        function clearObjectList() {
+            map[cursor.x][cursor.y].objects = []
+            renderMap()
+        }
+
+        let clipboard = []
+
+        function copyObjectList(cut) {
+            clipboard = [...map[cursor.x][cursor.y].objects]
+            if (cut) {
+                map[cursor.x][cursor.y].objects = []
+            }
+            renderMap()
+        }
+
+        function pasteObjectList() {
+            map[cursor.x][cursor.y].objects.push(...clipboard)
             renderMap()
         }
 

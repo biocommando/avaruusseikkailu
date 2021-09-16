@@ -26,55 +26,65 @@ public:
     bool bouncy = false;
     int sound = -1;
     int sound_key = 48;
+    int weapon_cost = -1; // -1 = cannot be bought
+    int ammo_cost = -1;
     std::string name;
 
     WeaponProfile()
     {}
 
-    WeaponProfile(const std::string &file)
+    static void read_from_file(const std::string &file, std::map<int, WeaponProfile> &output)
     {
-        ConfigFile cf([this](const auto &key, const auto &val)
+        int id = 0;
+        ConfigFile cf([&id, &output](const auto &key, const auto &val)
                       {
                           if (key == "damage")
-                              this->damage = std::stof(val);
+                              output[id].damage = std::stof(val);
                           if (key == "blast_radius")
-                              this->blast_radius = std::stoi(val);
+                              output[id].blast_radius = std::stoi(val);
                           if (key == "shots")
-                              this->shots = std::stoi(val);
+                              output[id].shots = std::stoi(val);
                           if (key == "random_spread")
-                              this->random_spread = std::stof(val) * ALLEGRO_PI / 180;
+                              output[id].random_spread = std::stof(val) * ALLEGRO_PI / 180;
                           if (key == "spread")
-                              this->spread = std::stof(val) * ALLEGRO_PI / 180;
+                              output[id].spread = std::stof(val) * ALLEGRO_PI / 180;
                           if (key == "angle")
-                              this->angle = std::stof(val) * ALLEGRO_PI / 180;
+                              output[id].angle = std::stof(val) * ALLEGRO_PI / 180;
                           if (key == "speed")
-                              this->speed = std::stof(val);
+                              output[id].speed = std::stof(val);
                           if (key == "acceleration")
-                              this->acceleration = std::stof(val);
+                              output[id].acceleration = std::stof(val);
                           if (key == "reload")
-                              this->reload = std::stoi(val);
+                              output[id].reload = std::stoi(val);
                           if (key == "alive_timer")
-                              this->alive_timer = std::stoi(val);
+                              output[id].alive_timer = std::stoi(val);
                           if (key == "alive_timer_variation")
-                              this->alive_timer_variation = std::stoi(val);
+                              output[id].alive_timer_variation = std::stoi(val);
                           if (key == "number_of_child_particles")
-                              this->number_of_child_particles = std::stoi(val);
+                              output[id].number_of_child_particles = std::stoi(val);
                           if (key == "child_particle_id")
-                              this->child_particle_id = std::stoi(val);
+                              output[id].child_particle_id = std::stoi(val);
                           if (key == "id")
-                              this->id = std::stoi(val);
+                          {
+                              id = std::stoi(val);
+                              output[id].id = id;
+                          }
                           if (key == "sprite")
-                              this->sprite_def_file = val;
+                              output[id].sprite_def_file = val;
                           if (key == "name")
-                              this->name = val;
+                              output[id].name = val;
                           if (key == "affected_by_gravity")
-                              this->affected_by_gravity = std::stoi(val) != 0;
+                              output[id].affected_by_gravity = std::stoi(val) != 0;
+                          if (key == "weapon_cost")
+                              output[id].weapon_cost = std::stoi(val);
+                          if (key == "ammo_cost")
+                              output[id].ammo_cost = std::stoi(val);
                           if (key == "sound")
-                              this->sound = std::stoi(val);
+                              output[id].sound = std::stoi(val);
                           if (key == "sound_key")
-                              this->sound_key = std::stoi(val);
+                              output[id].sound_key = std::stoi(val);
                           if (key == "bouncy")
-                              this->bouncy = std::stoi(val) != 0;
+                              output[id].bouncy = std::stoi(val) != 0;
                       },
                       [](const auto &s) {});
         cf.read_config_file(file);

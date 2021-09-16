@@ -50,9 +50,9 @@ inline void ship_ai(GameObject &ship, GameObject &player)
         ship.set_flag(ai_distance_flag, distance_squared);
         if (distance_squared < 512 * 512 && ship.get_flag(ai_sees_player_flag))
         {
-            auto a = dir_y / dir_x;
-            auto b = ship.get_y() - a * ship.get_x();
-            auto eq = a * player.get_x() + b;
+            const auto a = dir_y / dir_x;
+            const auto b = ship.get_y() - a * ship.get_x();
+            const auto eq = a * player.get_x() + b;
             if (dir_x > 0)
             {
                 if (eq < player.get_y())
@@ -161,12 +161,9 @@ inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
         }
     }
 
-    //if ((soldier.get_dy() > 0.3 || dx == 0) && soldier.get_counter(ai_soldier_jump_counter_id) == 0)
-
     if (!tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y() + 1, soldier.get_hitbox_w(), soldier.get_hitbox_h()) ||
         tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y(), soldier.get_hitbox_w(), soldier.get_hitbox_h()))
     {
-        //soldier.set_counter(ai_soldier_jump_counter_id, 30);
         soldier.set_speed(-soldier.get_dx(), soldier.get_dy());
         soldier.set_flag(ai_preferred_direction_flag, dir == 'R' ? 'L' : 'R');
     }

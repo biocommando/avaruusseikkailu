@@ -36,6 +36,8 @@ struct AnimationFrame
 {
     int x;
     int y;
+    int w;
+    int h;
     int animation_id;
     int length;
     int first_of_animation;
@@ -64,10 +66,23 @@ class Sprite
     {
         sx = frames[frame].x;
         sy = frames[frame].y;
+        w = frames[frame].w;
+        h = frames[frame].h;
         flip = frames[frame].flip;
         timer = frames[frame].length;
     }
 
+    void add_animation_frame(int x, int y, int w, int h, int animation_id, int length, int flip = 0)
+    {
+        auto f = AnimationFrame{x, y, w, h, animation_id, length, (int)frames.size(), false, flip};
+        if (frames.size() > 0 && frames[frames.size() - 1].animation_id == animation_id)
+        {
+            f.first_of_animation = frames[frames.size() - 1].first_of_animation;
+            frames[frames.size() - 1].has_next = true;
+        }
+        frames.push_back(f);
+        frame = 0;
+    }
 public:
     Sprite()
     {
@@ -87,7 +102,7 @@ public:
         {
             if (s == "end")
             {
-                add_animation_frame(x, y, id, length, flip);
+                add_animation_frame(x, y, w, h, id, length, flip);
                 continue;
             }
             const auto pos = s.find('=');
@@ -119,18 +134,6 @@ public:
                     id = std::stoi(val);
             }
         }
-    }
-
-    void add_animation_frame(int x, int y, int animation_id, int length, int flip = 0)
-    {
-        auto f = AnimationFrame{x, y, animation_id, length, (int)frames.size(), false, flip};
-        if (frames.size() > 0 && frames[frames.size() - 1].animation_id == animation_id)
-        {
-            f.first_of_animation = frames[frames.size() - 1].first_of_animation;
-            frames[frames.size() - 1].has_next = true;
-        }
-        frames.push_back(f);
-        frame = 0;
     }
 
     void set_zoom(float factor)

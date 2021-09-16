@@ -23,11 +23,11 @@ http.createServer((req, res) => {
                         objectType.name = x[1]
                     }
                 }
-                fs.readFileSync('config/collectable_profiles.ini').toString()
+                fs.readFileSync('config/profiles/collectable_profiles.ini').toString()
                     .split(/\r?\n/)
                     .map(x => x.split('='))
                     .forEach(mapObjectProfile)
-                fs.readFileSync('config/enemy_profiles.ini').toString()
+                fs.readFileSync('config/profiles/enemy_profiles.ini').toString()
                     .split(/\r?\n/)
                     .map(x => x.split('='))
                     .forEach(mapObjectProfile)
@@ -46,7 +46,7 @@ http.createServer((req, res) => {
                 let body = ''
                 req.on('data', data => body += data)
                 req.on('end', () => {
-                    createTilemap(JSON.parse(body), 'config/' + param)
+                    createTilemap(JSON.parse(body), 'config/map/' + param)
                     //fs.writeFileSync('map-projects/' + param, body)
                     res.end('ok')
                 })

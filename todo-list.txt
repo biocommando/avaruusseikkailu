@@ -7,7 +7,7 @@ Featuret:
 [x]	* tankki / turret
 [ ]	* tehdas, joka luo lisää aluksia / sotilaita
 [x] Aseprofiilit
-[ ] Poimittavat aseet / energia yms.
+[x] Poimittavat aseet / energia yms.
 [ ] Tuhoutuva maasto
 [ ] Räjähdys kappaleiksi
 [/] Tile boundary check before tile collision check?
@@ -18,13 +18,24 @@ Featuret:
 [x] Konfiguroitavat näppäimet
 [/] Menu
 [ ] Tallennus
-[/] HUD
-[ ] Vaihdettavat aseet
-[ ] Ammusten määrä
-[ ] Mission briefing / end -näyttö
+[x] HUD
+[x] Vaihdettavat aseet
+[x] Ammusten määrä
+[x] Mission briefing / end -näyttö
 [ ] Liikkuva maasto
-[ ] Kenttäeditori
+[x] Kenttäeditori
 [x] Musiikkiraitojen stereopannaus
+[x] "Musta pörssi"
+[x] Auto target nearest enemy (on button press)
 
 Bugit:
 [x] Turrettien suunta vasemmalle ammuttaessa väärä
+
+Ääniefektit:
+[ ] ase-pickup
+[ ] ammus-pickup
+[ ] elinvoima
+[ ] auto aim
+[ ] kolikko-pickup
+[ ] inventory open/close
+[ ] inventory buy

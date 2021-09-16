@@ -1,1 +1,0 @@
-node create-midi-metadata-file.js %1
