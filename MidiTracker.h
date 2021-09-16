@@ -1,6 +1,5 @@
 #pragma once
 #include "Synth.h"
-#include "allegro5/allegro_audio.h"
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
@@ -178,10 +177,14 @@ class MidiTracker
         SynthParams currentParams;
         float delay_send = 0, delay_time = 500, delay_feed = 0.5;
         int instrument_count = 0;
+        float total_volume = 1;
         ConfigFile cf(
-            [this, &currentParams, &delay_send, &delay_time, &delay_feed, &load_sfx](const auto &name, const auto &strValue)
+            [this, &total_volume, &currentParams, &delay_send, &delay_time, &delay_feed, &load_sfx](const auto &name, const auto &strValue)
             {
                 auto value = std::stof(strValue);
+                if (name == "total_volume")
+                    total_volume = value;
+
                 if (name == "o1type")
                     currentParams.osc1_type = (int)(5 * value * 0.99);
                 if (name == "o2type")
@@ -235,7 +238,7 @@ class MidiTracker
                     currentParams.noise_amount = value;
 
                 if (name == "volume")
-                    currentParams.volume = value;
+                    currentParams.volume = value * total_volume;
                 if (name == "pan")
                     currentParams.pan = value;
 
@@ -360,6 +363,7 @@ public:
      * trigger_mode flags:
      * 1 = trigger (note on)
      * 2 = release (note off)
+     * 4 = don't allow note stealing
      * --
      * id can be omitted if only trigger_mode release flag is set
      * or if the last effect is re-used
@@ -372,7 +376,8 @@ public:
             if (id < sound_effects.size())
                 synth.add_instrument(9, sound_effects[id], 0);
             midi_data[0] = 0b10010000 | 9;
-            synth.handle_midi_event(midi_data);
+            const auto flags = (trigger_mode & 4) ? 1 : 0;
+            synth.handle_midi_event(midi_data, flags);
         }
         if (trigger_mode & 2)
         {

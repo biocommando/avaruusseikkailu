@@ -102,6 +102,10 @@ int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
                 break;
             }
         }
+        else if (world->goal_status == 0 && key_status[ALLEGRO_KEY_ENTER])
+        {
+            break;
+        }
     }
 
     const auto ret = world->goal_status;

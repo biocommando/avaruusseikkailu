@@ -242,7 +242,7 @@ public:
     void progress_game()
     {
         mission_time++;
-        if (time_limit > -1 && mission_time > time_limit)
+        if (time_limit > -1 && mission_time > time_limit && goal_status != 0)
             goal_status = -1;
         else if (mission_time == survive_limit)
             goal_status--;
@@ -362,7 +362,7 @@ public:
             text_drawer.set_use_camera_offset(true);
         }
 
-        if (goal_status == -1)
+        if (goal_status <= 0)
         {
             extern int screen_w, screen_h;
             const int w = 200, h = 50;
@@ -373,8 +373,16 @@ public:
             al_draw_filled_rectangle(x0, y0, x0 + w, y0 + h,
                                      al_map_rgb_f(0.1, 0.1, 0.1));
             text_drawer.set_use_camera_offset(false);
-            text_drawer.draw_text(screen_w / 2, y0 + 15, "MISSION FAILED");
-            text_drawer.draw_text(screen_w / 2, y0 + 30, "Retry? Y/N");
+            if (goal_status == 0)
+            {
+                text_drawer.draw_text(screen_w / 2, y0 + 15, "MISSION COMPLETED");
+                text_drawer.draw_text(screen_w / 2, y0 + 30, "Press enter");
+            }
+            else
+            {
+                text_drawer.draw_text(screen_w / 2, y0 + 15, "MISSION FAILED");
+                text_drawer.draw_text(screen_w / 2, y0 + 30, "Retry? Y/N");
+            }
             text_drawer.set_use_camera_offset(true);
         }
 
@@ -452,11 +460,6 @@ public:
                                             player->set_health(health_bonus);
                                             msg = "Health +" + msg;
                                         }
-                                        else if (type == Collectable_MISSION_ITEM)
-                                        {
-                                            if (--this->retrieve_target == 0)
-                                                this->goal_status--;
-                                        }
                                         else if (type == Collectable_AMMO)
                                         {
                                             player->add_to_flag(player_ammo_amount_flag + obj->get_flag(weapon_flag), bonus_amt);
@@ -482,13 +485,17 @@ public:
                                     });
         game_object_holder.clean_up(GameObjectType_PLAYER, [this](GameObject *obj)
                                     {
-                                        this->midi_tracker.read_midi_file("sounds/end_screen.mid");
+                                        midi_tracker.trigger_sfx(255, sfx_thrust, 100, 2);
+                                        if (goal_status != 0)
+                                        {
+                                            this->goal_status = -1;
+                                            this->midi_tracker.read_midi_file("sounds/end_screen.mid");
+                                        }
                                         this->midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_large);
                                         for (int x_offs = -1; x_offs <= 1; x_offs++)
                                             for (int y_offs = -1; y_offs <= 1; y_offs++)
                                                 this->explosions.push_back(create_explosion(obj->get_x() + x_offs * 40, obj->get_y() + y_offs * 40, 2));
                                         this->player = nullptr;
-                                        this->goal_status = -1;
                                     });
     }
 
@@ -497,10 +504,11 @@ public:
         bool thrust_key = key_status[key_config.up];
         if (!show_inventory && thrust_key != last_thrust_key_status)
         {
+            // Use a note that is not used by anything else
             if (thrust_key)
-                midi_tracker.trigger_sfx(24, sfx_thrust, 100, 1);
+                midi_tracker.trigger_sfx(255, sfx_thrust, 100, 1 | 4);
             else
-                midi_tracker.trigger_sfx(24, sfx_thrust, 100, 2);
+                midi_tracker.trigger_sfx(255, sfx_thrust, 100, 2);
             last_thrust_key_status = thrust_key;
         }
 
@@ -619,7 +627,7 @@ public:
         }
         if (inventory_counter > 0)
             inventory_counter--;
-        if (key_status[key_config.inventory] && inventory_counter == 0)
+        if (key_status[key_config.inventory] && inventory_counter == 0 && goal_status > 0)
         {
             midi_tracker.trigger_sfx(60, sfx_select, 100);
             show_inventory = !show_inventory;

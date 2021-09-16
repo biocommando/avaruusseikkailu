@@ -50,6 +50,7 @@ inline void ship_ai(GameObject &ship, GameObject &player)
         ship.set_flag(ai_distance_flag, distance_squared);
         if (distance_squared < 512 * 512 && ship.get_flag(ai_sees_player_flag))
         {
+            ship.set_counter(ai_continue_trajectory_after_losing_sight_counter, 100);
             const auto a = dir_y / dir_x;
             const auto b = ship.get_y() - a * ship.get_x();
             const auto eq = a * player.get_x() + b;
@@ -112,6 +113,9 @@ inline void ship_ai(GameObject &ship, GameObject &player)
     else
     {
         ship.set_flag(ai_wants_to_shoot_flag, 0);
+        if (ship.get_counter(ai_continue_trajectory_after_losing_sight_counter) > 0 &&
+            ship.get_speed_in_direction() < 8)
+            ship.accelerate_in_direction(0.15);
     }
 }
 

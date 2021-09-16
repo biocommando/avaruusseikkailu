@@ -118,7 +118,7 @@ bool SynthVoice::ended()
     return amp_envelope.ended();
 }
 
-void Synth::handle_midi_event(unsigned char *event_data)
+void Synth::handle_midi_event(unsigned char *event_data, unsigned flags)
 {
     if ((event_data[0] & 0xF0) == 0b10000000)
     {
@@ -137,6 +137,8 @@ void Synth::handle_midi_event(unsigned char *event_data)
         SynthVoice new_voice(sample_rate, event_data[1], channel);
         new_voice.volume = event_data[2] / 127.0f;
         new_voice.set_params(instruments[channel]);
+        if (flags & 1)
+            new_voice.allow_note_stealing = false;
         bool voice_attached = false;
         voice_lock.lock();
          // Don't apply this logic to the FX channel unless we have very many voices active already
@@ -144,7 +146,7 @@ void Synth::handle_midi_event(unsigned char *event_data)
         {
             for (int i = 0; i < voices.size(); i++)
             {
-                if (voices[i].channel == channel && voices[i].key == event_data[1])
+                if (voices[i].allow_note_stealing && voices[i].channel == channel && voices[i].key == event_data[1])
                 {
                     voices[i] = new_voice;
                     voice_attached = true;

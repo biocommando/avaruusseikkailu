@@ -49,6 +49,7 @@ public:
     int key;
     int channel;
     float volume = 1;
+    bool allow_note_stealing = true;
 
     SynthVoice(float sample_rate, int key, int channel);
 
@@ -77,7 +78,7 @@ public:
     {
     }
 
-    void handle_midi_event(unsigned char *event_data);
+    void handle_midi_event(unsigned char *event_data, unsigned flags = 0);
 
     void add_instrument(int channel, SynthParams &params, float send_delay_amount);
 
