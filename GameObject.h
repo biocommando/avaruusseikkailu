@@ -209,7 +209,7 @@ public:
             dy = -1 - flags[collectable_float_bounce_amount_flag] / 10.0f;
         }
 
-        if (acceleration > 0)
+        if (acceleration > 1e-3)
         {
             add_speed_in_direction(acceleration);
             if (!is_shot)
@@ -316,12 +316,23 @@ public:
                 const auto sprite_btm = y + sprite.get_h() / 2 - camera_offset_y;
                 const auto col = al_map_rgb_f(.8, .8, 0);
                 auto max = get_flag(player_ammo_amount_flag + get_flag(weapon_flag)) / 5;
-                if (max > 8) max = 8;
+                if (max > 8)
+                    max = 8;
                 for (int i = max; i > 0; i--)
                 {
                     const auto x0 = x - 15 + i * 3 - camera_offset_x;
                     al_draw_filled_rectangle(x0, sprite_btm, x0 + 2, sprite_btm + 5, col);
                 }
+            }
+            if (acceleration > 0.1)
+            {
+                const auto ddx = sin(direction_angle + ALLEGRO_PI);
+                const auto ddy = -cos(direction_angle + ALLEGRO_PI);
+                auto &fx = vfx_tool->add(x + ddx * sprite.get_w() / 2,
+                                         y + ddy * sprite.get_h() / 2,
+                                         6, .42, .89, 1, randomint(15, 20));
+                VisualFxTool::disappear(fx);
+                VisualFxTool::fade_to_color(fx, 0, 0, 0);
             }
         }
         else if (is_shot)

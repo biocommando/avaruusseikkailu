@@ -35,6 +35,12 @@ class World
     int inventory_cursor_max = 9;
     int inventory_counter = 0;
 
+    // Lower priority = more important
+    std::map<int, float> target_priorities = {
+        {enemy_type_ship, 1},
+        {enemy_type_tank, 5},
+        {enemy_type_soldier, 7},
+    };
     GameObject *auto_aim_target = nullptr;
     bool auto_aim_target_changed = true;
 
@@ -517,18 +523,30 @@ public:
             auto &enemies = game_object_holder.get_category(GameObjectType_ENEMY);
             if (!auto_aim_target && auto_aim_target_changed)
             {
-                float nearest_dist = 1e12;
+                float nearest_dist = 1e200;
+                /*float nearest_ship_dist = 1e12;
+                GameObject *nearest_ship;*/
                 for (auto &enm : enemies)
                 {
                     if (!enm->get_flag(ai_sees_player_flag))
                         continue;
-                    const auto dist = player->get_distance_sqr(*enm);
+                    const auto priority = target_priorities[enm->get_flag(enemy_type_flag)];
+                    const auto dist = player->get_distance_sqr(*enm) * priority;
                     if (dist < nearest_dist)
                     {
                         nearest_dist = dist;
                         auto_aim_target = enm;
                     }
+                    /*if (enm->get_flag(enemy_type_flag) == enemy_type_ship && dist < nearest_ship_dist)
+                    {
+                        nearest_ship_dist = dist;
+                        nearest_ship = enm;
+                    }*/
                 }
+                /*if (nearest_ship && nearest_ship_dist - 500000 < nearest_dist)
+                {
+                    auto_aim_target = nearest_ship;
+                }*/
                 if (auto_aim_target)
                 {
                     auto &vfx = vfx_tool.add(auto_aim_target->get_x(), auto_aim_target->get_y(), 5, 0, 0.5, 0, 20);
