@@ -1,4 +1,4 @@
-function createTilemap(map, outputFileName) {
+function createTilemap(map, tileFile, outputFileName) {
     map.forEach(x => x.type = x.type === 'wall' ? 'x' : '.')
 
     function checkPattern(point, pattern) {
@@ -199,7 +199,7 @@ function createTilemap(map, outputFileName) {
         }
     })
 
-    let output = `sprite_sheet=sprites/tile01.png\r\nw=32\r\nh=32\r\n`
+    let output = `sprite_sheet=${tileFile}\r\nw=32\r\nh=32\r\n`
 
     let prev = { x: -1, sx: -1, sy: -1, y: -1, props: -1 }
     result.forEach(point => {

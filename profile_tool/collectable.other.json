@@ -1,0 +1,46 @@
+[
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Medium health",
+            "amount": "50",
+            "sprite": "config/sprite/pickup/cross.ini",
+            "type": "health",
+            "sound": "10",
+            "sound_key": "34",
+            "cost": "500"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "A few coins",
+            "sprite": "config/sprite/pickup/small_circle.ini",
+            "type": "coin",
+            "amount": "100",
+            "sound": "9",
+            "sound_key": "69"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Mission item 1",
+            "sprite": "config/sprite/pickup/star.ini",
+            "type": "mission",
+            "sound": "10",
+            "sound_key": "50"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Small health",
+            "amount": "20",
+            "sprite": "config/sprite/pickup/cross.ini",
+            "type": "health",
+            "sound": "10",
+            "sound_key": "44"
+        }
+    }
+]

@@ -38,23 +38,24 @@
     </style>
 </head>
 
-<body>
+<body onkeydown="handleKeyPress(event.code)">
     <div id="tileContainer">
 
     </div>
     <button onclick="promptDimensions()">Set dimensions</button>
+    <button onclick="promptSpriteSheet()">Set sprite sheet</button>
     Tool:
     <select id="clickType">
-        <option value="select">select</option>
-        <option value="paint">paint</option>
-        <option value="fill">fill</option>
+        <option value="select">select (s)</option>
+        <option value="paint">paint (p)</option>
+        <option value="fill">fill (f)</option>
     </select>
     Paint type:
     <select id="paintType">
-        <option value="">Background</option>
-        <option value="wall">Wall</option>
+        <option value="">Background (b)</option>
+        <option value="wall">Wall (w)</option>
     </select>
-    <br/>
+    <br />
     Add object:
     <select id="objectSelect" onchange="addObject()">
         <option value="none">select...</option>
@@ -64,10 +65,10 @@
     <textarea id="objectList" cols="20" rows="8"></textarea>
     <br>
     <button onclick="setObjectList()">Set</button>
-    <button onclick="clearObjectList()">Clear</button>
-    <button onclick="copyObjectList()">Copy</button>
-    <button onclick="copyObjectList(true)">Cut</button>
-    <button onclick="pasteObjectList()">Paste</button>
+    <button onclick="clearObjectList()">Clear (del)</button>
+    <button onclick="copyObjectList()">Copy (c)</button>
+    <button onclick="copyObjectList(true)">Cut (x)</button>
+    <button onclick="pasteObjectList()">Paste (v)</button>
     <hr />
     <button onclick="load()">Load project</button>
     <button onclick="save()">Save project</button>
@@ -76,6 +77,8 @@
         let w, h
         let cursor = { x: 0, y: 0 }
         let map = []
+
+        let spriteSheet = 'sprites/tile01.png'
 
         let objectTypes = [{ name: 'player', id: 0 }]
         fetch('/api/object-types')
@@ -105,6 +108,12 @@
                 setDimensions(x, y)
                 renderMap()
             }
+        }
+
+        function promptSpriteSheet() {
+            const newSpriteSheet = prompt('Sprite sheet file name?', spriteSheet)
+            if (newSpriteSheet)
+                spriteSheet = newSpriteSheet
         }
 
         function renderMap() {
@@ -146,6 +155,7 @@
 
         function clearObjectList() {
             map[cursor.x][cursor.y].objects = []
+            objectList.value=''
             renderMap()
         }
 
@@ -184,10 +194,15 @@
 
                         for (let x = 0; x < w; x++) {
                             for (let y = 0; y < h; y++) {
-                                loaded.map[x][y].objects = loaded.map[x][y].objects.map(o => objectTypes.find(ot => ot.id === o).name)
+                                loaded.map[x][y].objects = loaded.map[x][y].objects.map(o => {
+                                    const found = objectTypes.find(ot => ot.id === o)
+                                    if (found) return found.name
+                                    return 'UNKNOWN_id=' + o
+                                })
                             }
                         }
                         map = loaded.map
+                        spriteSheet = loaded.spriteSheet
                         renderMap()
                     })
             }
@@ -202,11 +217,17 @@
                     mapcpy[x] = []
                     for (let y = 0; y < h; y++) {
                         mapcpy[x][y] = { ...map[x][y] }
-                        mapcpy[x][y].objects = mapcpy[x][y].objects.map(o => objectTypes.find(ot => ot.name === o).id)
+                        mapcpy[x][y].objects = mapcpy[x][y].objects.map(o => {
+                            const found = objectTypes.find(ot => ot.name === o)
+                            if (found) return found.id
+                            const alt = o.split('=')[1]
+                            if (alt) return alt
+                            return 99999
+                        })
                     }
                 }
 
-                fetch('/api/save/' + file, { method: 'POST', body: JSON.stringify({ w, h, map: mapcpy }) })
+                fetch('/api/save/' + file, { method: 'POST', body: JSON.stringify({ w, h, map: mapcpy, spriteSheet }) })
             }
         }
 
@@ -218,13 +239,63 @@
                     for (let y = 0; y < h; y++) {
                         flatMap.push({
                             x, y, type: map[x][y].type,
-                            objectIds: map[x][y].objects.map(o => objectTypes.find(ot => ot.name === o).id)
+                            objectIds: map[x][y].objects.map(o => {
+                                const found = objectTypes.find(ot => ot.name === o)
+                                if (!found) alert(`Unknown object '${o}' at ${x},${y}`)
+                                return found.id
+                            })
                         })
                     }
                 }
                 //filename = file
-                fetch('/api/export/' + file + '.ini', { method: 'POST', body: JSON.stringify(flatMap) })
+                fetch('/api/export/' + file + '.ini',
+                    { method: 'POST', body: JSON.stringify({ data: flatMap, spriteSheet }) })
             }
+        }
+
+        function handleKeyPress(code) {
+            if (code == 'KeyC') {
+                copyObjectList()
+            } else if (code == 'KeyX') {
+                copyObjectList(true)
+            } else if (code == 'KeyV') {
+                pasteObjectList()
+            } else if (code == 'Delete') {
+                clearObjectList()
+            } else if (code == 'ArrowUp') {
+                if (cursor.y > 0) {
+                    cursor.y--
+                    renderMap()
+                }
+            } else if (code == 'ArrowDown') {
+                if (cursor.y < h - 1) {
+                    cursor.y++
+                    renderMap()
+                }
+            } else if (code == 'ArrowRight') {
+                if (cursor.x < w - 1) {
+                    cursor.x++
+                    renderMap()
+                }
+            } else if (code == 'ArrowLeft') {
+                if (cursor.x > 0) {
+                    cursor.x--
+                    renderMap()
+                }
+            } else if (code == 'KeyS') {
+                clickType.value = 'select'
+            } else if (code == 'KeyP') {
+                clickType.value = 'paint'
+            } else if (code == 'KeyF') {
+                clickType.value = 'fill'
+            } else if (code == 'KeyB') {
+                paintType.value = ''
+            } else if (code == 'KeyW') {
+                paintType.value = 'wall'
+            } else if (code == 'Space') {
+                cellClick(cursor.x, cursor.y)
+            }
+            return true
         }
 
         setDimensions(30, 30)

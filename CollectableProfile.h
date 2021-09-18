@@ -22,6 +22,7 @@ public:
     int sound_key = 48;
     int cost = -1;
     int buy_allow_flags = 0xFF;
+    int buy_menu_order;
     std::string name;
 
     CollectableProfile()
@@ -32,8 +33,9 @@ public:
     {
         std::map<int, CollectableProfile> m;
         int id = 0;
+        int order = 0;
 
-        ConfigFile cf([&m, &id](const auto &key, const auto &val)
+        ConfigFile cf([&m, &id, &order](const auto &key, const auto &val)
                       {
                           if (key == "amount")
                               m[id].bonus_amount = std::stof(val);
@@ -57,7 +59,11 @@ public:
                                   m[id].type = Collectable_MISSION_ITEM;
                           }
                           if (key == "id")
+                          {
                               id = std::stoi(val);
+                              m[id].buy_menu_order = order;
+                              order++;
+                          }
                           if (key == "sprite")
                               m[id].sprite = val;
                           if (key == "name")

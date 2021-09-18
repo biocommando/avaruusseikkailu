@@ -33,6 +33,7 @@ class World
 
     std::map<int, EnemyProfile> enemy_profiles;
     std::map<int, CollectableProfile> collectable_profiles;
+    std::vector<int> collectable_profiles_in_buy_order;
     bool show_inventory = false;
     int inventory_cursor = 1;
     int inventory_cursor_max = 9;
@@ -236,6 +237,7 @@ public:
     {
         enemy_profiles = EnemyProfile::read_from_file("config/profiles/enemy_profiles.ini");
         collectable_profiles = CollectableProfile::read_from_file("config/profiles/collectable_profiles.ini");
+        collectable_profiles_in_buy_order.resize(collectable_profiles.size());
 
         for (auto &e : enemy_profiles)
         {
@@ -247,6 +249,7 @@ public:
         for (auto &c : collectable_profiles)
         {
             load_sprite(c.second.sprite);
+            collectable_profiles_in_buy_order[c.second.buy_menu_order] = c.first;
         }
 
         int plr_x = 0, plr_y = 0;
@@ -263,20 +266,6 @@ public:
                 if (!spawn_enemy(iop.x, iop.y, iop.type, true))
                     spawn_collectable(iop.x, iop.y, iop.type, true);
             }
-            /*if (collectables.find(iop.type) != collectables.end())
-            {
-                const auto &profile = collectables[iop.type];
-                auto &sprite = sprites[profile.sprite];
-                auto &collectable = game_object_holder.add_object(new GameObject(sprite, GameObjectType_COLLECTABLE, sprite.get_w(), sprite.get_h()));
-                collectable.set_position(iop.x + 32 - sprite.get_w() / 2, iop.y + 32 - sprite.get_h() / 2);
-                collectable.set_flag(collectable_type_flag, (int)profile.type);
-                collectable.set_flag(collectable_bonus_amount_flag, profile.bonus_amount);
-                collectable.set_flag(weapon_flag, profile.weapon_id);
-                collectable.set_flag(collect_sound_id_flag, profile.sound);
-                collectable.set_flag(collect_sound_key_flag, profile.sound_key);
-                collectable.set_flag(collectable_original_pos_flag, collectable.get_y());
-                collectable.set_flag(collectable_float_bounce_amount_flag, randomint(0, 6));
-            }*/
         }
 
         // Add player last so player will always be drawn on top of other sprites
@@ -319,7 +308,7 @@ public:
                 ai_check_visible(*enm, *player, tile_map);
                 const auto type = enm->get_flag(enemy_type_flag);
                 if (type == enemy_type_ship)
-                    ship_ai(*enm, *player);
+                    ship_ai(*enm, *player, tile_map);
                 else if (type == enemy_type_soldier)
                     soldier_ai(*enm, *player, tile_map);
                 else
@@ -449,9 +438,9 @@ public:
             y += 15;
             text_drawer.draw_text(x_center, y, "Coins: " + std::to_string(player->get_flag(player_coins_flag)));
             int i = 0;
-            for (auto &collectable : collectable_profiles)
+            for (auto &collectable_id : collectable_profiles_in_buy_order)
             {
-                const auto &c = collectable.second;
+                const auto &c = collectable_profiles[collectable_id];
                 if (!check_buyable(c))
                     continue;
                 i++;
@@ -775,9 +764,9 @@ public:
             if (key_status[ALLEGRO_KEY_ENTER] && inventory_counter == 0)
             {
                 int i = 0;
-                for (auto &collectable : collectable_profiles)
+                for (auto &collectable_id : collectable_profiles_in_buy_order)
                 {
-                    const auto &c = collectable.second;
+                    const auto &c = collectable_profiles[collectable_id];
                     if (!check_buyable(c))
                         continue;
                     i++;
@@ -787,7 +776,7 @@ public:
                         if (coins >= c.cost)
                         {
                             midi_tracker.trigger_sfx(72, sfx_select, 120);
-                            const auto new_collectable = spawn_collectable(player->get_x(), player->get_y(), collectable.first);
+                            const auto new_collectable = spawn_collectable(player->get_x(), player->get_y(), collectable_id);
                             new_collectable->set_speed(random(-1, 1), random(-1, 1));
                             for (int i = 0; i < 60; i++)
                                 new_collectable->progress();

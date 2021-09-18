@@ -1,0 +1,13 @@
+[{
+    "type": "enemy",
+    "data": {
+        "name": "Tank",
+        "type": "tank",
+        "sprite": "config/sprite/tank/tank.ini",
+        "hitbox_w": "64",
+        "hitbox_h": "22",
+        "health": "200",
+        "weapon": "<weapon.AA Flak>",
+        "drop_collectable": "<collectable.Medium health>"
+    }
+}]

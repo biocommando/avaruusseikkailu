@@ -1,0 +1,29 @@
+[
+    {
+        "type": "enemy",
+        "data": {
+            "name": "Beetle",
+            "type": "ship",
+            "sprite": "config/sprite/ship/beetle.ini",
+            "health": "60",
+            "weapon": "<weapon.Small shot>",
+            "spawn_enemy": "<enemy.Soldier>",
+            "drop_collectable": "<collectable.Small health>"
+        }
+    },
+    {
+        "type": "enemy",
+        "data": {
+            "name": "Hydra",
+            "type": "ship",
+            "sprite": "config/sprite/ship/hawk.ini",
+            "health": "150",
+            "weapon": "<weapon.Small shot, damage+>",
+            "spawn_enemy": "<enemy.Beetle>",
+            "spawn_enemy_count": "4",
+            "drop_collectable": "<collectable.A few coins>",
+            "drop_collectable_count": "2",
+            "drop_collectable_is_random": "1"
+        }
+    }
+]

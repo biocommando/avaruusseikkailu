@@ -1,0 +1,36 @@
+[
+    {
+        "type": "weapon",
+        "data": {
+            "name": "Dual pulse gun",
+            "sprite": "config/sprite/shot/small/red.ini",
+            "damage": "7",
+            "shots": "2",
+            "random_spread": "2",
+            "alive_timer": "50",
+            "reload": "5",
+            "speed": "15",
+            "affected_by_gravity": "1",
+            "blast_radius": "10",
+            "sound": "7",
+            "sound_key": "99"
+        }
+    },
+    {
+        "type": "weapon",
+        "data": {
+            "name": "Pulse gun",
+            "sprite": "config/sprite/shot/small/red.ini",
+            "damage": "7",
+            "shots": "1",
+            "random_spread": "0",
+            "alive_timer": "50",
+            "reload": "4",
+            "speed": "17",
+            "affected_by_gravity": "1",
+            "blast_radius": "10",
+            "sound": "7",
+            "sound_key": "105"
+        }
+    }
+]

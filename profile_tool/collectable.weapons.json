@@ -1,0 +1,70 @@
+[
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Pulse gun",
+            "sprite": "config/sprite/pickup/small_star.ini",
+            "type": "weapon_<weapon.Pulse gun>",
+            "sound": "8",
+            "sound_key": "36"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Dual pulse gun",
+            "sprite": "config/sprite/pickup/small_star.ini",
+            "type": "weapon_<weapon.Dual pulse gun>",
+            "sound": "8",
+            "sound_key": "36",
+            "cost": "100"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Carpet bomb",
+            "sprite": "config/sprite/pickup/small_star.ini",
+            "type": "weapon_<weapon.Carpet bomb>",
+            "sound": "8",
+            "sound_key": "36",
+            "cost": "1000"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Pulse gun ammo",
+            "sprite": "config/sprite/pickup/pole.ini",
+            "type": "ammo_<weapon.Pulse gun>",
+            "sound": "6",
+            "sound_key": "88",
+            "amount": "50",
+            "cost": "25"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Dual pulse gun ammo",
+            "sprite": "config/sprite/pickup/pole.ini",
+            "type": "ammo_<weapon.Dual pulse gun>",
+            "sound": "6",
+            "sound_key": "88",
+            "amount": "25",
+            "cost": "25"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "Carpet bomb ammo",
+            "sprite": "config/sprite/pickup/pole.ini",
+            "type": "ammo_<weapon.Carpet bomb>",
+            "amount": "15",
+            "sound": "6",
+            "sound_key": "88",
+            "cost": "100"
+        }
+    }
+]

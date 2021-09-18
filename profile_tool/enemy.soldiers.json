@@ -1,0 +1,15 @@
+[
+    {
+        "type": "enemy",
+        "data": {
+            "name": "Soldier",
+            "type": "soldier",
+            "sprite": "config/sprite/soldier/soldier.ini",
+            "sprite_zoom": "0.7",
+            "hitbox_w": "16",
+            "hitbox_h": "40",
+            "health": "40",
+            "weapon": "<weapon.Rapid fire, small>"
+        }
+    }
+]

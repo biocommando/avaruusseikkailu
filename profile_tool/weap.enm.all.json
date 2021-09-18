@@ -1,0 +1,86 @@
+[
+    {
+        "type": "weapon",
+        "data": {
+            "name": "Small shot",
+            "sprite": "config/sprite/shot/small/cyan.ini",
+            "damage": "7",
+            "shots": "1",
+            "random_spread": "5",
+            "alive_timer": "50",
+            "reload": "30",
+            "speed": "15",
+            "affected_by_gravity": "1",
+            "blast_radius": "10",
+            "sound": "7",
+            "sound_key": "80"
+        }
+    },
+    {
+        "type": "weapon",
+        "data": {
+            "name": "Rapid fire, small",
+            "sprite": "config/sprite/shot/small/yellow.ini",
+            "damage": "2",
+            "shots": "1",
+            "random_spread": "10",
+            "alive_timer": "50",
+            "reload": "5",
+            "speed": "20",
+            "affected_by_gravity": "1",
+            "blast_radius": "3",
+            "sound": "7",
+            "sound_key": "110"
+        }
+    },
+    {
+        "type": "weapon",
+        "data": {
+            "name": "Small shot, damage+",
+            "sprite": "config/sprite/shot/ball/purple.ini",
+            "damage": "10",
+            "shots": "1",
+            "random_spread": "15",
+            "alive_timer": "50",
+            "reload": "30",
+            "speed": "15",
+            "affected_by_gravity": "1",
+            "blast_radius": "10",
+            "sound": "7",
+            "sound_key": "60"
+        }
+    },
+    {
+        "type": "weapon",
+        "data": {
+            "name": "AA Flak",
+            "sprite": "config/sprite/shot/blink/blue.ini",
+            "damage": "10",
+            "shots": "2",
+            "random_spread": "15",
+            "alive_timer": "15",
+            "reload": "50",
+            "speed": "8",
+            "affected_by_gravity": "1",
+            "blast_radius": "30",
+            "sound": "7",
+            "sound_key": "60",
+            "number_of_child_particles": "1",
+            "child_particle_id": "<weapon.AA Flak child>"
+        }
+    },
+    {
+        "type": "weapon",
+        "data": {
+            "name": "AA Flak child",
+            "sprite": "config/sprite/shot/shrapnel/blue.ini",
+            "damage": "5",
+            "shots": "8",
+            "spread": "360",
+            "alive_timer": "10",
+            "speed": "8",
+            "affected_by_gravity": "1",
+            "blast_radius": "10"
+        }
+    }
+]

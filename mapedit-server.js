@@ -46,24 +46,12 @@ http.createServer((req, res) => {
                 let body = ''
                 req.on('data', data => body += data)
                 req.on('end', () => {
-                    createTilemap(JSON.parse(body), 'config/map/' + param)
-                    //fs.writeFileSync('map-projects/' + param, body)
+                    const obj = JSON.parse(body)
+                    createTilemap(obj.data, obj.spriteSheet, 'config/map/' + param)
                     res.end('ok')
                 })
                 return
             }
-            /*if (cmd === 'load') {
-                url = '/' + missionPack + '/mission' + param
-            }
-            if (cmd === 'save') {
-                let body = ''
-                req.on('data', data => body += data)
-                req.on('end', () => {
-                    fs.writeFileSync(missionPack + '/mission' + param, body)
-                    res.end('ok')
-                })
-                return
-            }*/
         }
         if (url === '/') url = '/mapedit.html'
         const extension = '.' + url.replace(/.+\./, '')

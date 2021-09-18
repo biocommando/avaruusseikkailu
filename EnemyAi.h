@@ -38,7 +38,7 @@ inline void ai_check_visible(GameObject &ai, GameObject &player, TileMap &tiles)
     }
 }
 
-inline void ship_ai(GameObject &ship, GameObject &player)
+inline void ship_ai(GameObject &ship, GameObject &player, TileMap &tm)
 {
     const auto dx = player.get_x() - ship.get_x();
     const auto dy = player.get_y() - ship.get_y();
@@ -50,7 +50,8 @@ inline void ship_ai(GameObject &ship, GameObject &player)
         ship.set_flag(ai_distance_flag, distance_squared);
         if (distance_squared < 512 * 512 && ship.get_flag(ai_sees_player_flag))
         {
-            ship.set_counter(ai_continue_trajectory_after_losing_sight_counter, 100);
+            ship.set_counter(ai_patrol_counter, 30);
+            ship.set_flag(ai_patrol_mode_flag, 1 - 2 * randomint(0, 1));
             const auto a = dir_y / dir_x;
             const auto b = ship.get_y() - a * ship.get_x();
             const auto eq = a * player.get_x() + b;
@@ -101,9 +102,15 @@ inline void ship_ai(GameObject &ship, GameObject &player)
         }
         else
         {
+            if (random() > 0.85)
+            {
+                // divert -10...10 deg from path
+                ship.increment_direction_angle(random(-.17, .17));
+            }
+
             if (ship.get_flag(ai_distance_flag) > 64 * 64 && ship.get_speed_in_direction() < 8)
                 //ship.add_speed_in_direction(0.5);
-                ship.accelerate_in_direction(0.15);
+                ship.accelerate_in_direction(random(0.12, 0.18));
         }
         if (angle_difference_from_target < 0.2 && ship.get_counter(reload_counter_id) == 0)
         {
@@ -117,14 +124,25 @@ inline void ship_ai(GameObject &ship, GameObject &player)
     else
     {
         ship.set_flag(ai_wants_to_shoot_flag, 0);
-        const auto continue_counter = ship.get_counter(ai_continue_trajectory_after_losing_sight_counter);
-        if (continue_counter > 0)
+        // AI continues in "patrol" mode
+        const auto patrol_mode = ship.get_flag(ai_patrol_mode_flag);
+        if (patrol_mode)
         {
             if (ship.get_speed_in_direction() < 8)
                 ship.accelerate_in_direction(0.15);
-            if (continue_counter < 70 && ship.get_speed_in_direction() < 0.5)
+            if (ship.get_counter(ai_patrol_counter) % 20 == 0 ||
+                tm.check_collision(ship.get_x() + dir_x * 32, ship.get_y() + dir_y * 32, ship.get_hitbox_w(), ship.get_hitbox_h()) ||
+                tm.check_collision(ship.get_x() + dir_x * 64, ship.get_y() + dir_y * 64, ship.get_hitbox_w(), ship.get_hitbox_h()) ||
+                tm.check_collision(ship.get_x() + dir_x * 96, ship.get_y() + dir_y * 96, ship.get_hitbox_w(), ship.get_hitbox_h()))
             {
-                ship.set_counter(ai_continue_trajectory_after_losing_sight_counter, 0);
+                auto direction = patrol_mode;
+                if (ship.get_counter(ai_patrol_counter) == 0)
+                {
+                    ship.set_counter(ai_patrol_counter, 200); 
+                    direction = -direction;
+                    ship.set_flag(ai_patrol_mode_flag, direction);
+                }
+                ship.increment_direction_angle(ALLEGRO_PI / 32 * direction);
             }
         }
     }

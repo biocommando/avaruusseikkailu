@@ -1,0 +1,42 @@
+[
+    {
+        "type": "weapon",
+        "data": {
+            "name": "Carpet bomb",
+            "damage": "40",
+            "shots": "1",
+            "random_spread": "20",
+            "spread": "0",
+            "alive_timer": "60",
+            "alive_timer_variation": "3",
+            "sprite": "config/sprite/shot/blink/red.ini",
+            "reload": "3",
+            "speed": "2",
+            "affected_by_gravity": "1",
+            "number_of_child_particles": "1",
+            "child_particle_id": "<weapon.Carpet bomb child>",
+            "angle": "180",
+            "bouncy": "0",
+            "blast_radius": "64",
+            "sound": "6",
+            "sound_key": "36"
+        }
+    },
+    {
+        "type": "weapon",
+        "data": {
+            "name": "Carpet bomb child",
+            "damage": "10",
+            "shots": "6",
+            "random_spread": "0",
+            "spread": "360",
+            "alive_timer": "20",
+            "alive_timer_variation": "10",
+            "sprite": "config/sprite/shot/shrapnel/red.ini",
+            "reload": "10",
+            "speed": "5",
+            "affected_by_gravity": "1",
+            "blast_radius": "20"
+        }
+    }
+]
