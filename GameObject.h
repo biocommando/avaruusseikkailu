@@ -366,7 +366,7 @@ public:
     {
         auto &ct = get_category(obj->get_type());
         ct.push_back(obj);
-        return *ct[ct.size() - 1];
+        return *ct.back();
     }
 
     std::vector<GameObject *> &get_category(GameObjectType category)

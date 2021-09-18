@@ -83,10 +83,14 @@ inline void ship_ai(GameObject &ship, GameObject &player)
         }
         ship.set_counter(ai_change_direction_counter_id, 3);
     }
-    const auto preferred_dir = ship.get_flag(ai_preferred_direction_flag);
-
+    auto preferred_dir = ship.get_flag(ai_preferred_direction_flag);
     if (preferred_dir != 0)
     {
+        if (random() > 0.85)
+        {
+            preferred_dir = preferred_dir == 'L' ? 'R' : 'L';
+        }
+
         auto angle_difference_from_target = angle_between(dir_x, dir_y, dx, dy);
         if (angle_difference_from_target > 0.1)
         {
@@ -113,14 +117,32 @@ inline void ship_ai(GameObject &ship, GameObject &player)
     else
     {
         ship.set_flag(ai_wants_to_shoot_flag, 0);
-        if (ship.get_counter(ai_continue_trajectory_after_losing_sight_counter) > 0 &&
-            ship.get_speed_in_direction() < 8)
-            ship.accelerate_in_direction(0.15);
+        const auto continue_counter = ship.get_counter(ai_continue_trajectory_after_losing_sight_counter);
+        if (continue_counter > 0)
+        {
+            if (ship.get_speed_in_direction() < 8)
+                ship.accelerate_in_direction(0.15);
+            if (continue_counter < 70 && ship.get_speed_in_direction() < 0.5)
+            {
+                ship.set_counter(ai_continue_trajectory_after_losing_sight_counter, 0);
+            }
+        }
     }
 }
 
 inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
 {
+    const auto dir = soldier.get_flag(ai_preferred_direction_flag);
+    const auto dy = soldier.get_dy();
+    const auto dx = soldier.get_dx();
+
+    if (dy > 0.1)
+    {
+        soldier.set_animation(dir == 'L' ? 4 : 5);
+        soldier.set_flag(ai_wants_to_shoot_flag, 0);
+        return;
+    }
+
     const auto shooting_dist = fabs(soldier.get_x() - player.get_x()) < 120;
     if (soldier.get_counter(reload_counter_id) == 0 && soldier.get_flag(ai_sees_player_flag))
     {
@@ -138,9 +160,7 @@ inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
     {
         soldier.set_flag(ai_wants_to_shoot_flag, 0);
     }
-    const auto dir = soldier.get_flag(ai_preferred_direction_flag);
-    const auto dy = soldier.get_dy();
-    const auto dx = soldier.get_dx();
+
     if (dir == 0)
     {
         soldier.set_flag(ai_preferred_direction_flag, random() < 0.5 ? 'R' : 'L');
@@ -168,6 +188,8 @@ inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
     if (!tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y() + 1, soldier.get_hitbox_w(), soldier.get_hitbox_h()) ||
         tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y(), soldier.get_hitbox_w(), soldier.get_hitbox_h()))
     {
+        while (tm.check_collision(soldier.get_x(), soldier.get_y(), soldier.get_hitbox_w(), soldier.get_hitbox_h()))
+            soldier.set_position(soldier.get_x(), soldier.get_y() - 1);
         soldier.set_speed(-soldier.get_dx(), soldier.get_dy());
         soldier.set_flag(ai_preferred_direction_flag, dir == 'R' ? 'L' : 'R');
     }

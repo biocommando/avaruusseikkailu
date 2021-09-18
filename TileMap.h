@@ -192,10 +192,12 @@ public:
 
     void draw()
     {
+        al_hold_bitmap_drawing(true);
         for (auto &t : tiles)
         {
             t.draw();
         }
+        al_hold_bitmap_drawing(false);
     }
 
     int check_collision(float cx, float cy, float hb_w, float hb_h)

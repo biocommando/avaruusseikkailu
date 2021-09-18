@@ -141,7 +141,7 @@ void Synth::handle_midi_event(unsigned char *event_data, unsigned flags)
             new_voice.allow_note_stealing = false;
         bool voice_attached = false;
         voice_lock.lock();
-         // Don't apply this logic to the FX channel unless we have very many voices active already
+        // Don't apply this logic to the FX channel unless we have very many voices active already
         if (channel != 9 || voices.size() > 16)
         {
             for (int i = 0; i < voices.size(); i++)
@@ -181,6 +181,16 @@ void Synth::kill_voices()
     voice_lock.unlock();
 }
 
+static inline float soft_clip(const float f)
+{
+#ifdef NO_SOFTCLIP
+    return f;
+#else
+    const auto f2 = f * f;
+    return f * (27 + f2) / (27 + 9 * f2);
+#endif
+}
+
 void Synth::process(float *buffer_left, float *buffer_right, int buffer_size)
 {
     voice_lock.lock();
@@ -206,14 +216,14 @@ void Synth::process(float *buffer_left, float *buffer_right, int buffer_size)
         const auto delay_output = send_delay.process(delay_send_sample);
         if (buffer_right)
         {
-            buffer_left[i] = sample_left + delay_output;
-            buffer_right[i] = sample_right + delay_output;
+            buffer_left[i] = soft_clip(sample_left + delay_output);
+            buffer_right[i] = soft_clip(sample_right + delay_output);
         }
         else
         {
-            buffer_left[i] = sample_left + delay_output;
+            buffer_left[i] = soft_clip(sample_left + delay_output);
             i++;
-            buffer_left[i] = sample_right + delay_output;
+            buffer_left[i] = soft_clip(sample_right + delay_output);
         }
     }
     voice_lock.unlock();

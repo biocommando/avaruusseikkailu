@@ -30,6 +30,9 @@ class World
     int mission_time = 0;
     int number_of_goals = 0;
     bool last_thrust_key_status = false;
+
+    std::map<int, EnemyProfile> enemy_profiles;
+    std::map<int, CollectableProfile> collectable_profiles;
     bool show_inventory = false;
     int inventory_cursor = 1;
     int inventory_cursor_max = 9;
@@ -156,19 +159,92 @@ public:
         }
     }
 
+    GameObject *spawn_collectable(int x, int y, int type, bool initial_setup = false)
+    {
+        if (collectable_profiles.find(type) != collectable_profiles.end())
+        {
+            const auto &profile = collectable_profiles[type];
+            auto &sprite = sprites[profile.sprite];
+            auto &collectable = game_object_holder.add_object(new GameObject(sprite, GameObjectType_COLLECTABLE, sprite.get_w(), sprite.get_h()));
+            if (initial_setup)
+                collectable.set_position(x + 32 - sprite.get_w() / 2, y + 32 - sprite.get_h() / 2);
+            else
+                collectable.set_position(x, y);
+            collectable.set_flag(collectable_type_flag, (int)profile.type);
+            collectable.set_flag(collectable_bonus_amount_flag, profile.bonus_amount);
+            collectable.set_flag(weapon_flag, profile.weapon_id);
+            collectable.set_flag(collect_sound_id_flag, profile.sound);
+            collectable.set_flag(collect_sound_key_flag, profile.sound_key);
+            collectable.set_flag(collectable_original_pos_flag, collectable.get_y());
+            collectable.set_flag(collectable_float_bounce_amount_flag, randomint(0, 6));
+            return &collectable;
+        }
+        return nullptr;
+    }
+
+    GameObject *spawn_enemy(int x, int y, int type, bool initial_setup = false)
+    {
+        if (enemy_profiles.find(type) != enemy_profiles.end())
+        {
+            const auto &e = enemy_profiles[type];
+            int type = enemy_type_ship;
+            if (e.type == "soldier")
+                type = enemy_type_soldier;
+            if (e.type == "tank")
+                type = enemy_type_tank;
+
+            auto hitbox_w = e.hitbox_w;
+            auto hitbox_h = e.hitbox_h;
+            if (e.hitbox_from_sprite)
+            {
+                hitbox_w = sprites[e.sprite].get_w();
+                hitbox_h = sprites[e.sprite].get_h();
+            }
+            auto &enemy = game_object_holder.add_object(new GameObject(sprites[e.sprite], GameObjectType_ENEMY, hitbox_w, hitbox_h));
+            if (initial_setup)
+                enemy.set_position(x + 32 - hitbox_w / 2, y + 32 - hitbox_h / 2);
+            else
+                enemy.set_position(x, y);
+            enemy.set_armor(100.0f / e.health);
+            enemy.set_flag(weapon_flag, e.weapon);
+            enemy.set_flag(enemy_type_flag, type);
+            if (e.spawn_enemy != -1)
+            {
+                enemy.set_flag(enemy_spawn_enemy_id_flag, e.spawn_enemy);
+                enemy.set_flag(enemy_spawn_enemy_count_flag, e.spawn_enemy_count);
+                enemy.set_flag(enemy_spawn_enemy_is_random_flag, e.spawn_enemy_is_random);
+            }
+            if (e.drop_collectable != -1)
+            {
+                enemy.set_flag(enemy_drop_collectable_id_flag, e.drop_collectable);
+                enemy.set_flag(enemy_drop_collectable_count_flag, e.drop_collectable_count);
+                enemy.set_flag(enemy_drop_collectable_is_random_flag, e.drop_collectable_is_random);
+            }
+            // Avoid spawning inside a wall... Not a very sophisticated algorithm, let's hope it works at least :D
+            int origx = enemy.get_x();
+            int origy = enemy.get_y();
+            while (tile_map.check_collision(enemy.get_x(), enemy.get_y(), hitbox_w, hitbox_h))
+            {
+                enemy.set_position(origx + randomint(-16, 16), origy + randomint(-16, 16));
+            }
+            return &enemy;
+        }
+        return nullptr;
+    }
+
     void spawn_enemies()
     {
-        auto enemies = EnemyProfile::read_from_file("config/profiles/enemy_profiles.ini");
-        auto collectables = CollectableProfile::read_from_file("config/profiles/collectable_profiles.ini");
+        enemy_profiles = EnemyProfile::read_from_file("config/profiles/enemy_profiles.ini");
+        collectable_profiles = CollectableProfile::read_from_file("config/profiles/collectable_profiles.ini");
 
-        for (auto &e : enemies)
+        for (auto &e : enemy_profiles)
         {
             load_sprite(e.second.sprite);
             if (e.second.sprite_zoom > 0)
                 sprites[e.second.sprite].set_zoom(e.second.sprite_zoom);
         }
 
-        for (auto &c : collectables)
+        for (auto &c : collectable_profiles)
         {
             load_sprite(c.second.sprite);
         }
@@ -182,29 +258,12 @@ public:
                 plr_x = iop.x;
                 plr_y = iop.y;
             }
-            else if (enemies.find(iop.type) != enemies.end())
+            else
             {
-                const auto &e = enemies[iop.type];
-                int type = enemy_type_ship;
-                if (e.type == "soldier")
-                    type = enemy_type_soldier;
-                if (e.type == "tank")
-                    type = enemy_type_tank;
-
-                auto hitbox_w = e.hitbox_w;
-                auto hitbox_h = e.hitbox_h;
-                if (e.hitbox_from_sprite)
-                {
-                    hitbox_w = sprites[e.sprite].get_w();
-                    hitbox_h = sprites[e.sprite].get_h();
-                }
-                auto &enemy = game_object_holder.add_object(new GameObject(sprites[e.sprite], GameObjectType_ENEMY, hitbox_w, hitbox_h));
-                enemy.set_position(iop.x + 32 - hitbox_w / 2, iop.y + 32 - hitbox_h / 2);
-                enemy.set_armor(100.0f / e.health);
-                enemy.set_flag(weapon_flag, e.weapon);
-                enemy.set_flag(enemy_type_flag, type);
+                if (!spawn_enemy(iop.x, iop.y, iop.type, true))
+                    spawn_collectable(iop.x, iop.y, iop.type, true);
             }
-            else if (collectables.find(iop.type) != collectables.end())
+            /*if (collectables.find(iop.type) != collectables.end())
             {
                 const auto &profile = collectables[iop.type];
                 auto &sprite = sprites[profile.sprite];
@@ -217,7 +276,7 @@ public:
                 collectable.set_flag(collect_sound_key_flag, profile.sound_key);
                 collectable.set_flag(collectable_original_pos_flag, collectable.get_y());
                 collectable.set_flag(collectable_float_bounce_amount_flag, randomint(0, 6));
-            }
+            }*/
         }
 
         // Add player last so player will always be drawn on top of other sprites
@@ -281,6 +340,7 @@ public:
                 if (plr_shot->collides(*enm))
                 {
                     plr_shot->set_health(-1);
+                    const auto orig_health = enm->get_health();
                     enm->deal_damage(plr_shot->get_flag(damage_flag));
                     break;
                 }
@@ -301,16 +361,45 @@ public:
             auto &collectables = game_object_holder.get_category(GameObjectType_COLLECTABLE);
             for (auto &collectable : collectables)
             {
-                if (player->collides(*collectable))
+                const auto not_collectable_cntr = collectable->get_counter(collectable_not_collectable_counter);
+                if (not_collectable_cntr == 0)
                 {
-                    const auto type = (CollectableType)collectable->get_flag(collectable_type_flag);
-                    if (type != Collectable_HEALTH || player->get_health() < 100)
+                    if (player->collides(*collectable))
                     {
-                        collectable->set_health(-1);
+                        const auto type = (CollectableType)collectable->get_flag(collectable_type_flag);
+                        if (type != Collectable_HEALTH || player->get_health() < 100)
+                        {
+                            collectable->set_health(-1);
+                        }
                     }
+                    else if (player->get_distance_sqr(*collectable) < 64 * 64)
+                    {
+                        collectable->set_speed(
+                            player->get_x() < collectable->get_x() - 10 ? -1.5 : (player->get_x() > collectable->get_x() + 10 ? 1.5 : 0),
+                            player->get_y() < collectable->get_y() - 10 ? -1.5 : (player->get_y() > collectable->get_y() + 10 ? 1.5 : 0));
+                        collectable->set_flag(collectable_original_pos_flag, collectable->get_y() + 10);
+                        collectable->set_flag(collectable_getting_sucked_in_flag, 1);
+                    }
+                    else if (collectable->get_flag(collectable_getting_sucked_in_flag))
+                    {
+                        collectable->set_speed(0, 0);
+                        collectable->set_flag(collectable_getting_sucked_in_flag, 0);
+                    }
+                }
+                else if (not_collectable_cntr == 1)
+                {
+                    collectable->set_speed(0, 0);
                 }
             }
         }
+    }
+
+    bool check_buyable(const CollectableProfile &c)
+    {
+        const bool not_buyable = c.cost == -1 ||
+                                 // Can't buy weapons already owned
+                                 (c.type == Collectable_WEAPON && (player->get_flag(player_owns_weapon_flag + c.weapon_id)));
+        return !not_buyable && (c.buy_allow_flags & mission_config.buy_allow_flags);
     }
 
     void progress_and_draw()
@@ -327,7 +416,9 @@ public:
             progress_game();
             vfx_tool.progress_and_draw();
             progress_and_draw_explosions(explosions);
+            al_hold_bitmap_drawing(true);
             game_object_holder.draw();
+            al_hold_bitmap_drawing(false);
         }
 
         if (player && show_inventory)
@@ -343,27 +434,31 @@ public:
                                      al_map_rgb_f(0.1, 0.1, 0.1));
             int y = y0 + 15;
             text_drawer.set_use_camera_offset(false);
-            text_drawer.draw_text(x_center, y, "I N V E N T O R Y");
+            text_drawer.draw_text(x_center, y, "B L A C K  M A R K E T");
             y += 15;
             text_drawer.draw_text(x_center, y, "Coins: " + std::to_string(player->get_flag(player_coins_flag)));
             int i = 0;
-            for (auto &wpentry : weapon_profiles)
+            for (auto &collectable : collectable_profiles)
             {
-                const auto &wp = wpentry.second;
-                if (wp.weapon_cost == -1)
+                const auto &c = collectable.second;
+                if (!check_buyable(c))
                     continue;
                 i++;
                 y += 15;
                 if (inventory_cursor == i)
                     al_draw_filled_rectangle(x0 + 15, y - 2, x0 + w - 15, y + 10, al_map_rgb_f(0.5, 0.1, 0.1));
-
-                if (player->get_flag(player_owns_weapon_flag + wp.id))
-                    text_drawer.draw_text(x_center, y, wp.name + ", ammo: " + std::to_string(player->get_flag(player_ammo_amount_flag + wp.id)) + //
-                                                           " [$" + std::to_string(wp.ammo_cost) + "]");
+                if (c.type == Collectable_WEAPON)
+                    text_drawer.draw_text(x_center, y, "Weapon: " + weapon_profiles[c.weapon_id].name + " [" + std::to_string(c.cost) + "]");
+                else if (c.type == Collectable_AMMO)
+                    text_drawer.draw_text(x_center, y, "Ammo: " + weapon_profiles[c.weapon_id].name + " +" + std::to_string((int)c.bonus_amount) + " [" + std::to_string(c.cost) + "], current: " + std::to_string(player->get_flag(player_ammo_amount_flag + c.weapon_id)));
+                else if (c.type == Collectable_HEALTH)
+                    text_drawer.draw_text(x_center, y, "Health: +" + std::to_string((int)c.bonus_amount) + " [" + std::to_string(c.cost) + "]");
                 else
-                    text_drawer.draw_text(x_center, y, wp.name + " [$" + std::to_string(wp.weapon_cost) + "]");
+                    text_drawer.draw_text(x_center, y, "Dick in a box [priceless]"); // Misconfiguration
             }
             inventory_cursor_max = i;
+            if (inventory_cursor > inventory_cursor_max)
+                inventory_cursor = inventory_cursor_max;
             text_drawer.draw_text(x_center, y0 + h - 10, "up/down = select, enter = buy weapon / ammo");
             text_drawer.set_use_camera_offset(true);
         }
@@ -449,6 +544,29 @@ public:
                                         this->explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), 1));
                                         if (--this->kill_target == 0)
                                             this->goal_status--;
+
+                                        if (obj->get_flag(enemy_drop_collectable_id_flag))
+                                        {
+                                            for (int i = 0; i < obj->get_flag(enemy_drop_collectable_count_flag); i++)
+                                            {
+                                                if (!obj->get_flag(enemy_drop_collectable_is_random_flag) || random() > 0.5)
+                                                {
+                                                    auto new_collectable = spawn_collectable(obj->get_x(), obj->get_y(), obj->get_flag(enemy_drop_collectable_id_flag));
+                                                    new_collectable->set_speed(random(-1, 1), random(-1, 1));
+                                                    new_collectable->set_counter(collectable_not_collectable_counter, 10);
+                                                }
+                                            }
+                                        }
+                                        if (obj->get_flag(enemy_spawn_enemy_id_flag))
+                                        {
+                                            for (int i = 0; i < obj->get_flag(enemy_spawn_enemy_count_flag); i++)
+                                            {
+                                                if (!obj->get_flag(enemy_spawn_enemy_is_random_flag) || random() > 0.5)
+                                                {
+                                                    spawn_enemy(obj->get_x(), obj->get_y(), obj->get_flag(enemy_spawn_enemy_id_flag));
+                                                }
+                                            }
+                                        }
                                     });
         game_object_holder.clean_up(GameObjectType_COLLECTABLE, [this](GameObject *obj)
                                     {
@@ -487,7 +605,7 @@ public:
                                             if (--this->retrieve_target == 0)
                                                 this->goal_status--;
                                         }
-                                        this->text_drawer.add_timed_permanent_text(obj->get_x(), obj->get_y(), msg, 100);
+                                        this->text_drawer.add_timed_permanent_text(obj->get_x(), obj->get_y(), msg, 40);
                                     });
         game_object_holder.clean_up(GameObjectType_PLAYER, [this](GameObject *obj)
                                     {
@@ -524,8 +642,6 @@ public:
             if (!auto_aim_target && auto_aim_target_changed)
             {
                 float nearest_dist = 1e200;
-                /*float nearest_ship_dist = 1e12;
-                GameObject *nearest_ship;*/
                 for (auto &enm : enemies)
                 {
                     if (!enm->get_flag(ai_sees_player_flag))
@@ -537,16 +653,7 @@ public:
                         nearest_dist = dist;
                         auto_aim_target = enm;
                     }
-                    /*if (enm->get_flag(enemy_type_flag) == enemy_type_ship && dist < nearest_ship_dist)
-                    {
-                        nearest_ship_dist = dist;
-                        nearest_ship = enm;
-                    }*/
                 }
-                /*if (nearest_ship && nearest_ship_dist - 500000 < nearest_dist)
-                {
-                    auto_aim_target = nearest_ship;
-                }*/
                 if (auto_aim_target)
                 {
                     auto &vfx = vfx_tool.add(auto_aim_target->get_x(), auto_aim_target->get_y(), 5, 0, 0.5, 0, 20);
@@ -656,42 +763,30 @@ public:
             if (key_status[ALLEGRO_KEY_ENTER] && inventory_counter == 0)
             {
                 int i = 0;
-                for (auto &wpentry : weapon_profiles)
+                for (auto &collectable : collectable_profiles)
                 {
-                    const auto &wp = wpentry.second;
-                    if (wp.weapon_cost == -1)
+                    const auto &c = collectable.second;
+                    if (!check_buyable(c))
                         continue;
                     i++;
                     if (i == inventory_cursor)
                     {
                         auto coins = player->get_flag(player_coins_flag);
-                        if (player->get_flag(player_owns_weapon_flag + wp.id))
+                        if (coins >= c.cost)
                         {
-                            if (coins >= wp.ammo_cost)
-                            {
-                                midi_tracker.trigger_sfx(72, sfx_select, 60);
-                                const auto curr_ammo = player->get_flag(player_ammo_amount_flag + wp.id);
-                                player->set_flag(player_ammo_amount_flag + wp.id, curr_ammo + 1);
-                                coins -= wp.ammo_cost;
-                                inventory_counter = 6;
-                            }
-                        }
-                        else if (coins >= wp.weapon_cost)
-                        {
-                            midi_tracker.trigger_sfx(20, sfx_select, 120);
-                            give_player_weapon(player, wp.id);
-                            coins -= wp.weapon_cost;
-                            inventory_counter = 30;
+                            midi_tracker.trigger_sfx(72, sfx_select, 120);
+                            const auto new_collectable = spawn_collectable(player->get_x(), player->get_y(), collectable.first);
+                            new_collectable->set_speed(random(-1, 1), random(-1, 1));
+                            for (int i = 0; i < 60; i++)
+                                new_collectable->progress();
+                            new_collectable->set_counter(collectable_not_collectable_counter, 30);
+                            coins -= c.cost;
+                            inventory_counter = 10;
                         }
                         player->set_flag(player_coins_flag, coins);
                         break;
                     }
                 }
-            }
-            for (int i = 1; i <= 9; i++)
-            {
-                if (key_status[ALLEGRO_KEY_0 + i])
-                    inventory_cursor = i;
             }
         }
     }

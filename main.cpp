@@ -28,12 +28,13 @@ void calc_camera_offset_correction(float plr_pos, float *camera_offset, float sc
 
 int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
 {
+    
     auto world = new World();
 
     world->mission_config = mission_config;
 
     world->init_game();
-
+    
     std::map<int, bool> key_status;
     float target_camera_y = camera_offset_y;
     float target_camera_x = camera_offset_x;
@@ -136,6 +137,11 @@ int main(int argc, char **argv)
     ALLEGRO_MIXER *mixer = al_get_default_mixer();
     al_attach_audio_stream_to_mixer(audio_stream, mixer);
 
+    std::cout << al_get_new_display_flags() << std::endl;
+    al_set_new_window_title("The Space Game");
+    al_set_new_display_refresh_rate(60);
+    //al_set_new_display_option(ALLEGRO_VSYNC, 1, ALLEGRO_REQUIRE);
+    al_set_new_display_flags(ALLEGRO_OPENGL);
     display = al_create_display(screen_w, screen_h);
     if (!display)
     {
@@ -148,7 +154,6 @@ int main(int argc, char **argv)
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_audio_stream_event_source(audio_stream));
     al_start_timer(timer); // Start the timer
-
     auto mission_configs = MissionConfig::read_from_file("config/missions.ini");
     int last_accomplished = -1;
     while (true)

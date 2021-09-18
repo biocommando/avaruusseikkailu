@@ -11,6 +11,13 @@ public:
     int health;
     int hitbox_w;
     int hitbox_h;
+    int drop_collectable = -1;
+    int drop_collectable_count = 1;
+    int drop_collectable_is_random = 0;
+    int spawn_enemy = -1;
+    int spawn_enemy_count = 1;
+    int spawn_enemy_count_max = -1;
+    int spawn_enemy_is_random = 0;
     bool hitbox_from_sprite = true;
     float sprite_zoom = -1;
     std::string type;
@@ -45,6 +52,18 @@ public:
                           }
                           if (key == "sprite_zoom")
                               m[id].sprite_zoom = std::stof(val);
+                          if (key == "drop_collectable")
+                              m[id].drop_collectable = std::stoi(val);
+                          if (key == "drop_collectable_count")
+                              m[id].drop_collectable_count = std::stoi(val);
+                          if (key == "drop_collectable_is_random")
+                              m[id].drop_collectable_is_random = std::stoi(val);
+                          if (key == "spawn_enemy")
+                              m[id].spawn_enemy = std::stoi(val);
+                          if (key == "spawn_enemy_count")
+                              m[id].spawn_enemy_count = std::stoi(val);
+                          if (key == "spawn_enemy_is_random")
+                              m[id].spawn_enemy_is_random = std::stoi(val);
                       },
                       [](const auto &s) {});
         cf.read_config_file(file);

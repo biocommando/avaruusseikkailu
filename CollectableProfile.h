@@ -20,6 +20,8 @@ public:
     float bonus_amount;
     int sound = -1;
     int sound_key = 48;
+    int cost = -1;
+    int buy_allow_flags = 0xFF;
     std::string name;
 
     CollectableProfile()
@@ -64,6 +66,10 @@ public:
                               m[id].sound = std::stoi(val);
                           if (key == "sound_key")
                               m[id].sound_key = std::stoi(val);
+                          if (key == "cost")
+                              m[id].cost = std::stoi(val);
+                          if (key == "buy_allow_flags")
+                              m[id].buy_allow_flags = std::stoi(val);
                       },
                       [](const auto &s) {});
         cf.read_config_file(file);

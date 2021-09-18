@@ -18,6 +18,7 @@ public:
     std::vector<MissionGoal> mission_goals;
     std::string map_file;
     std::string music;
+    int buy_allow_flags = 1;
 
     static std::vector<MissionConfig> read_from_file(const std::string &file)
     {
@@ -38,6 +39,8 @@ public:
                               c.name = val;
                           if (key == "music")
                               c.music = val;
+                          if (key == "buy_allow_flags")
+                              c.buy_allow_flags = std::stoi(val);
                       },
                       [&c, &v, &g](const auto &s)
                       {

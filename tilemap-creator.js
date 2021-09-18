@@ -39,8 +39,8 @@ function createTilemap(map, outputFileName) {
     }
 
     function randomWall() {
-        const sx = Math.floor(Math.random() * 6)
-        const sy = Math.floor(Math.random() * 2 + 1)
+        const sx = Math.floor(Math.random() * (6 - 1e-6))
+        const sy = Math.floor(Math.random() * (2 - 1e-6) + 1)
         if (sx === 4 && sy === 2)
             return randomWall()
         return { sx, sy, description: "generic wall" }
@@ -191,6 +191,12 @@ function createTilemap(map, outputFileName) {
         point.objectIds.forEach(obj => {
             result.push({ description: 'object', x: point.x, y: point.y, type: obj })
         })
+        if (point.type === '.')
+        {
+            let sx = Math.floor(Math.random() * (5 - 1e-6))
+            let sy = Math.floor(Math.random() * (2 - 1e-6)) + 6
+            result.push({ x: point.x, y: point.y, sx, sy, description: 'background' })
+        }
     })
 
     let output = `sprite_sheet=sprites/tile01.png\r\nw=32\r\nh=32\r\n`

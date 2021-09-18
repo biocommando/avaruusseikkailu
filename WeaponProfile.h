@@ -26,8 +26,6 @@ public:
     bool bouncy = false;
     int sound = -1;
     int sound_key = 48;
-    int weapon_cost = -1; // -1 = cannot be bought
-    int ammo_cost = -1;
     std::string name;
 
     WeaponProfile()
@@ -75,10 +73,6 @@ public:
                               output[id].name = val;
                           if (key == "affected_by_gravity")
                               output[id].affected_by_gravity = std::stoi(val) != 0;
-                          if (key == "weapon_cost")
-                              output[id].weapon_cost = std::stoi(val);
-                          if (key == "ammo_cost")
-                              output[id].ammo_cost = std::stoi(val);
                           if (key == "sound")
                               output[id].sound = std::stoi(val);
                           if (key == "sound_key")

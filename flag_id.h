@@ -15,6 +15,12 @@ constexpr int blast_radius_flag = 302;
 constexpr int damage_flag = 303;
 constexpr int bouncy_flag = 304;
 constexpr int weapon_flag = 305;
+constexpr int enemy_drop_collectable_id_flag = 306;
+constexpr int enemy_drop_collectable_count_flag = 307;
+constexpr int enemy_drop_collectable_is_random_flag = 308;
+constexpr int enemy_spawn_enemy_id_flag = 309;
+constexpr int enemy_spawn_enemy_count_flag = 310;
+constexpr int enemy_spawn_enemy_is_random_flag = 311;
 
 constexpr int collectable_type_flag = 400;
 constexpr int collectable_bonus_amount_flag = 401;
@@ -22,6 +28,8 @@ constexpr int collect_sound_id_flag = 402;
 constexpr int collect_sound_key_flag = 403;
 constexpr int collectable_original_pos_flag = 404;
 constexpr int collectable_float_bounce_amount_flag = 405;
+constexpr int collectable_not_collectable_counter = 406;
+constexpr int collectable_getting_sucked_in_flag = 407;
 
 constexpr int player_coins_flag = 1100;
 constexpr int player_owns_weapon_flag = 1200;
