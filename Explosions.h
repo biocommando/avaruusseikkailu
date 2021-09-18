@@ -23,15 +23,15 @@ typedef struct
     int y;
     int phase;
     int circle_count;
-    struct explosion_circle circles[10];
+    explosion_circle circles[10];
 } Explosion;
 
-#define MAX(x,y) ((x)>(y)?(x):(y))
-#define MIN(x,y) ((x)<(y)?(x):(y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
 
 inline int comp_expl_circle(const void *elem1, const void *elem2)
 {
-    if (((struct explosion_circle *)elem1)->i > ((struct explosion_circle *)elem2)->i)
+    if (((explosion_circle *)elem1)->i > ((explosion_circle *)elem2)->i)
         return 1;
     return -1;
 }
@@ -64,8 +64,6 @@ inline Explosion create_explosion(int x, int y, float base_scale = 1)
     return ex;
 }
 
-extern float camera_offset_x, camera_offset_y;
-
 inline void draw_explosion_circle(float x, float y, float intensity, float radius)
 {
     const float red = MIN((intensity * 0.5 + 0.5), 1);
@@ -74,9 +72,6 @@ inline void draw_explosion_circle(float x, float y, float intensity, float radiu
     const float blue = MIN((sqintens * sqintens * sqintens * 0.8), 1);
 
     const auto col = al_map_rgb_f(red, green, blue);
-
-    x -= camera_offset_x;
-    y -= camera_offset_y;
 
     al_draw_filled_circle(x - 32, y - 32, radius, col);
 }
@@ -119,6 +114,22 @@ inline void progress_and_draw_explosions(std::vector<Explosion> &explosions)
         {
             ex->exists = 0;
             explosions.erase(explosions.begin() + i);
+        }
+    }
+}
+
+inline void draw_explosions(const std::vector<Explosion> &explosions)
+{
+    for (int i = explosions.size() - 1; i >= 0; i--)
+    {
+        const Explosion *ex = &explosions[i];
+
+        for (int j = 0; j < ex->circle_count; j++)
+        {
+            const explosion_circle *c = &ex->circles[j];
+            draw_explosion_circle(c->x + ex->x, c->y + ex->y, c->i * .9, c->r);
+            draw_explosion_circle(c->x + ex->x, c->y + ex->y, c->i, c->r * .8);
+            draw_explosion_circle(c->x + ex->x, c->y + ex->y, c->i * 1.1, c->r * .7);
         }
     }
 }

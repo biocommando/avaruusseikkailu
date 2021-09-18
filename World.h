@@ -405,11 +405,22 @@ public:
     void progress_and_draw()
     {
         const auto game_paused = show_inventory;
-        al_clear_to_color(al_map_rgb_f(0, 0, 0));
+
+        ALLEGRO_TRANSFORM transform;
+        al_identity_transform(&transform);
+        al_translate_transform(&transform, -camera_offset_x, -camera_offset_y);
+        al_use_transform(&transform);
+
+        //al_clear_to_color(al_map_rgb_f(0, 0, 0));
+
         tile_map.draw();
         if (game_paused)
         {
+            vfx_tool.draw();
+            draw_explosions(explosions);
+            al_hold_bitmap_drawing(true);
             game_object_holder.draw();
+            al_hold_bitmap_drawing(false);
         }
         else
         {
@@ -425,15 +436,15 @@ public:
         {
             extern int screen_w, screen_h;
             const int w = 440, h = 300;
-            const auto x0 = screen_w / 2 - w / 2;
-            const auto y0 = screen_h / 2 - h / 2;
+            const auto x0 = screen_w / 2 - w / 2 + camera_offset_x;
+            const auto y0 = screen_h / 2 - h / 2 + camera_offset_y;
             const auto x_center = x0 + w / 2;
             al_draw_filled_rectangle(x0 - 15, y0 - 15, x0 + w + 15, y0 + h + 15,
                                      al_map_rgb_f(0.2, 0.2, 0.2));
             al_draw_filled_rectangle(x0, y0, x0 + w, y0 + h,
                                      al_map_rgb_f(0.1, 0.1, 0.1));
             int y = y0 + 15;
-            text_drawer.set_use_camera_offset(false);
+            //text_drawer.set_use_camera_offset(false);
             text_drawer.draw_text(x_center, y, "B L A C K  M A R K E T");
             y += 15;
             text_drawer.draw_text(x_center, y, "Coins: " + std::to_string(player->get_flag(player_coins_flag)));
@@ -460,31 +471,31 @@ public:
             if (inventory_cursor > inventory_cursor_max)
                 inventory_cursor = inventory_cursor_max;
             text_drawer.draw_text(x_center, y0 + h - 10, "up/down = select, enter = buy weapon / ammo");
-            text_drawer.set_use_camera_offset(true);
+            // text_drawer.set_use_camera_offset(true);
         }
 
         if (goal_status <= 0)
         {
             extern int screen_w, screen_h;
             const int w = 200, h = 50;
-            const auto x0 = screen_w / 2 - w / 2;
-            const auto y0 = screen_h / 2 - h / 2;
+            const auto x0 = screen_w / 2 - w / 2 + camera_offset_x;
+            const auto y0 = screen_h / 2 - h / 2 + camera_offset_y;
             al_draw_filled_rectangle(x0 - 15, y0 - 15, x0 + w + 15, y0 + h + 15,
                                      al_map_rgb_f(0.2, 0.2, 0.2));
             al_draw_filled_rectangle(x0, y0, x0 + w, y0 + h,
                                      al_map_rgb_f(0.1, 0.1, 0.1));
-            text_drawer.set_use_camera_offset(false);
+            //text_drawer.set_use_camera_offset(false);
             if (goal_status == 0)
             {
-                text_drawer.draw_text(screen_w / 2, y0 + 15, "MISSION COMPLETED");
-                text_drawer.draw_text(screen_w / 2, y0 + 30, "Press enter");
+                text_drawer.draw_text(screen_w / 2 + camera_offset_x, y0 + 15, "MISSION COMPLETED");
+                text_drawer.draw_text(screen_w / 2 + camera_offset_x, y0 + 30, "Press enter");
             }
             else
             {
-                text_drawer.draw_text(screen_w / 2, y0 + 15, "MISSION FAILED");
-                text_drawer.draw_text(screen_w / 2, y0 + 30, "Retry? Y/N");
+                text_drawer.draw_text(screen_w / 2 + camera_offset_x, y0 + 15, "MISSION FAILED");
+                text_drawer.draw_text(screen_w / 2 + camera_offset_x, y0 + 30, "Retry? Y/N");
             }
-            text_drawer.set_use_camera_offset(true);
+            //text_drawer.set_use_camera_offset(true);
         }
 
         text_drawer.draw_timed_permanent_texts();
@@ -755,6 +766,7 @@ public:
         if (key_status[key_config.inventory] && inventory_counter == 0 && goal_status > 0)
         {
             midi_tracker.trigger_sfx(60, sfx_select, 100);
+            midi_tracker.trigger_sfx(255, sfx_thrust, 100, 2);
             show_inventory = !show_inventory;
             inventory_counter = 30;
         }

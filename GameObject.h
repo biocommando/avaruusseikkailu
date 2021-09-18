@@ -302,6 +302,7 @@ public:
 
     void draw()
     {
+        extern float camera_offset_x, camera_offset_y;
         if (!is_shot && !is_collectable)
         {
             const auto sprite_top = y - sprite.get_h() / 2 - camera_offset_y;

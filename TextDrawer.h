@@ -37,10 +37,10 @@ public:
 
     void draw_text(float x, float y, const std::string &text)
     {
-        if (use_camera_offset)
+        if (!use_camera_offset)
         {
-            x -= camera_offset_x;
-            y -= camera_offset_y;
+            x += camera_offset_x;
+            y += camera_offset_y;
         }
         al_draw_text(font, color, x, y, flags, text.c_str());
     }
@@ -59,10 +59,10 @@ public:
 
             auto x = t->x;
             auto y = t->y;
-            if (t->use_camera_offset)
+            if (!t->use_camera_offset)
             {
-                x -= camera_offset_x;
-                y -= camera_offset_y;
+                x += camera_offset_x;
+                y += camera_offset_y;
             }
 
             al_draw_text(font, t->color, x, y, t->flags, t->text.c_str());

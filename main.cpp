@@ -12,13 +12,10 @@ void calc_camera_offset_correction(float plr_pos, float *camera_offset, float sc
     if (level_size <= screen_size)
         return;
     auto target = plr_pos - screen_size / 2;
+    
+    auto offset_correction = target - *camera_offset;
 
-    auto offset_correction = (target - *camera_offset) * 0.08;
-
-    if (fabs(offset_correction) > 32)
-        offset_correction = offset_correction > 0 ? 32 : -32;
-
-    *camera_offset = *camera_offset + offset_correction;
+    *camera_offset = (int)(*camera_offset + offset_correction);
 
     if (*camera_offset < 0)
         *camera_offset = 0;

@@ -21,6 +21,12 @@ class VisualFxTool
 {
     std::vector<VisualFx> vfx;
 
+    void draw_one(const VisualFx &fx)
+    {
+        auto col = al_map_rgb_f(fx.r, fx.g, fx.b);
+        al_draw_filled_circle(fx.x, fx.y, fx.rad, col);
+    }
+
 public:
     void progress_and_draw()
     {
@@ -32,14 +38,21 @@ public:
                 vfx.erase(vfx.begin() + i);
                 continue;
             }
-            auto col = al_map_rgb_f(fx.r, fx.g, fx.b);
-            al_draw_filled_circle(fx.x - camera_offset_x, fx.y - camera_offset_y, fx.rad, col);
+            draw_one(fx);
             fx.x += fx.x_delta;
             fx.y += fx.y_delta;
             fx.rad += fx.rad_delta;
             fx.r += fx.r_delta;
             fx.g += fx.g_delta;
             fx.b += fx.b_delta;
+        }
+    }
+
+    void draw()
+    {
+        for (auto &fx : vfx)
+        {
+            draw_one(fx);
         }
     }
 

@@ -12,12 +12,16 @@
 
 inline int show_mission_selector(std::vector<MissionConfig> &mission_configs, ALLEGRO_EVENT_QUEUE *queue, int last_accomplished)
 {
+    ALLEGRO_TRANSFORM transform;
+    al_identity_transform(&transform);
+    al_use_transform(&transform);
+
     int delay = 10;
     int show_mission = last_accomplished + 1;
     if (show_mission > mission_configs.size() - 1)
         show_mission = 0;
     TextDrawer text_drawer;
-    text_drawer.set_use_camera_offset(false);
+    text_drawer.set_use_camera_offset(true);
 
     MidiTracker midi_tracker(44100);
     midi_tracker.read_midi_file("sounds/dark_ambient_theme.mid");
@@ -29,9 +33,10 @@ inline int show_mission_selector(std::vector<MissionConfig> &mission_configs, AL
 
         if (event.type == ALLEGRO_EVENT_AUDIO_STREAM_FRAGMENT)
         {
-            auto stream = (ALLEGRO_AUDIO_STREAM *) event.any.source;
-            float *buf = (float*)al_get_audio_stream_fragment(stream);
-            if (buf) {
+            auto stream = (ALLEGRO_AUDIO_STREAM *)event.any.source;
+            float *buf = (float *)al_get_audio_stream_fragment(stream);
+            if (buf)
+            {
                 midi_tracker.process_buffer(buf, 1024);
                 al_set_audio_stream_fragment(stream, buf);
             }
@@ -49,13 +54,12 @@ inline int show_mission_selector(std::vector<MissionConfig> &mission_configs, AL
             {
                 if (show_mission < last_accomplished + 1)
                     text_drawer.draw_text(10, 30, "Completed");
-                
+
                 for (int i = 0; i < mission_configs[show_mission].mission_goals.size(); i++)
                 {
                     const auto &goal = mission_configs[show_mission].mission_goals[i];
                     text_drawer.draw_text(10, 40 + i * 10, "Goal: " + goal.name + " - " + std::to_string(goal.value));
                 }
-
             }
             al_flip_display();
         }
