@@ -44,6 +44,7 @@ class World
         {enemy_type_ship, 1},
         {enemy_type_tank, 5},
         {enemy_type_soldier, 7},
+        {enemy_type_building, 100},
     };
     GameObject *auto_aim_target = nullptr;
     bool auto_aim_target_changed = true;
@@ -191,8 +192,10 @@ public:
             int type = enemy_type_ship;
             if (e.type == "soldier")
                 type = enemy_type_soldier;
-            if (e.type == "tank")
+            else if (e.type == "tank")
                 type = enemy_type_tank;
+            else if (e.type == "building")
+                type = enemy_type_building;
 
             auto hitbox_w = e.hitbox_w;
             auto hitbox_h = e.hitbox_h;
@@ -311,7 +314,7 @@ public:
                     ship_ai(*enm, *player, tile_map);
                 else if (type == enemy_type_soldier)
                     soldier_ai(*enm, *player, tile_map);
-                else
+                else if (type == enemy_type_tank)
                     tank_ai(*enm, *player);
                 if (enm->get_flag(ai_wants_to_shoot_flag))
                 {
@@ -540,6 +543,11 @@ public:
                                             sfx_id = sfx_explosion_var;
                                             expl_rad = 3;
                                         }
+                                        else if (type == enemy_type_building)
+                                        {
+                                            sfx_id = sfx_explosion_var;
+                                            expl_rad = 7;
+                                        }
                                         this->midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_large);
                                         this->explosions.push_back(create_explosion(obj->get_x(), obj->get_y(), 1));
                                         if (--this->kill_target == 0)
@@ -547,9 +555,10 @@ public:
 
                                         if (obj->get_flag(enemy_drop_collectable_id_flag))
                                         {
+                                            const auto rand_ratio = obj->get_flag(enemy_drop_collectable_is_random_flag);
                                             for (int i = 0; i < obj->get_flag(enemy_drop_collectable_count_flag); i++)
                                             {
-                                                if (!obj->get_flag(enemy_drop_collectable_is_random_flag) || random() > 0.5)
+                                                if (!rand_ratio || random(0, 100) < rand_ratio)
                                                 {
                                                     auto new_collectable = spawn_collectable(obj->get_x(), obj->get_y(), obj->get_flag(enemy_drop_collectable_id_flag));
                                                     new_collectable->set_speed(random(-1, 1), random(-1, 1));
@@ -559,11 +568,13 @@ public:
                                         }
                                         if (obj->get_flag(enemy_spawn_enemy_id_flag))
                                         {
+                                            const auto rand_ratio = obj->get_flag(enemy_spawn_enemy_is_random_flag);
                                             for (int i = 0; i < obj->get_flag(enemy_spawn_enemy_count_flag); i++)
                                             {
-                                                if (!obj->get_flag(enemy_spawn_enemy_is_random_flag) || random() > 0.5)
+                                                if (!rand_ratio || random(0, 100) < rand_ratio)
                                                 {
-                                                    spawn_enemy(obj->get_x(), obj->get_y(), obj->get_flag(enemy_spawn_enemy_id_flag));
+                                                    auto enm = spawn_enemy(obj->get_x(), obj->get_y(), obj->get_flag(enemy_spawn_enemy_id_flag));
+                                                    enm->set_flag(ai_preferred_direction_flag, random() > 0.5 ? 'L' : 'R');
                                                 }
                                             }
                                         }
@@ -647,7 +658,7 @@ public:
                     if (!enm->get_flag(ai_sees_player_flag))
                         continue;
                     const auto priority = target_priorities[enm->get_flag(enemy_type_flag)];
-                    const auto dist = player->get_distance_sqr(*enm) * priority;
+                    const auto dist = player->get_distance(*enm) * priority;
                     if (dist < nearest_dist)
                     {
                         nearest_dist = dist;

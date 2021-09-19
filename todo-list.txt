@@ -5,7 +5,7 @@ Featuret:
 [x]	* alus
 [x]	* sotilas
 [x]	* tankki / turret
-[ ]	* tehdas, joka luo lisää aluksia / sotilaita
+[ ]	* rakennukset
 [x] Aseprofiilit
 [x] Poimittavat aseet / energia yms.
 [ ] Tuhoutuva maasto
@@ -14,7 +14,7 @@ Featuret:
 [x] Tehtävät
 [x] Äänet
 [x] Musiikki
-[ ] Taustagrafiikka
+[x] Taustagrafiikka
 [x] Konfiguroitavat näppäimet
 [/] Menu
 [ ] Tallennus
@@ -27,15 +27,8 @@ Featuret:
 [x] Musiikkiraitojen stereopannaus
 [x] "Musta pörssi"
 [x] Auto target nearest enemy (on button press)
+[ ] Auto aim -parannukset (ottaisi kulman huomioon)
+[x] Sotilaan randomit tapahtumat
 
 Bugit:
 [x] Turrettien suunta vasemmalle ammuttaessa väärä
-
-Ääniefektit:
-[ ] ase-pickup
-[ ] ammus-pickup
-[ ] elinvoima
-[ ] auto aim
-[ ] kolikko-pickup
-[ ] inventory open/close
-[ ] inventory buy

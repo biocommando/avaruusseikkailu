@@ -23,7 +23,7 @@
             "spawn_enemy_count": "4",
             "drop_collectable": "<collectable.A few coins>",
             "drop_collectable_count": "2",
-            "drop_collectable_is_random": "1"
+            "drop_collectable_is_random": "70"
         }
     }
 ]

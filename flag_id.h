@@ -5,6 +5,7 @@ constexpr int enemy_type_flag = 10;
 constexpr int enemy_type_ship = 1;
 constexpr int enemy_type_soldier = 2;
 constexpr int enemy_type_tank = 3;
+constexpr int enemy_type_building = 4;
 
 constexpr int reload_counter_id = 100;
 constexpr int alive_counter_id = 200;

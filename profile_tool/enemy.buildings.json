@@ -1,0 +1,12 @@
+[{
+    "type": "enemy",
+    "data": {
+        "name": "Quarter",
+        "type": "building",
+        "sprite": "config/sprite/building/quarter.ini",
+        "health": "300",
+        "spawn_enemy": "<enemy.Soldier>",
+        "spawn_enemy_count": "10",
+        "spawn_enemy_is_random": "80"
+    }
+}]

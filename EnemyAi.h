@@ -187,7 +187,7 @@ inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
     {
         if (dir == 'L')
         {
-            soldier.set_speed(-2, 0, 2);
+            soldier.set_speed(-1 - random(0, 1.5), 0, 2);
             if (shooting_dist)
                 soldier.set_animation(3);
             else
@@ -195,7 +195,7 @@ inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
         }
         else
         {
-            soldier.set_speed(2, 0, 2);
+            soldier.set_speed(1 + random(0, 1.5), 0, 2);
             if (shooting_dist)
                 soldier.set_animation(2);
             else
