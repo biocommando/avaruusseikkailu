@@ -26,6 +26,7 @@ inline int show_mission_selector(std::vector<MissionConfig> &mission_configs, AL
     MidiTracker midi_tracker(44100);
     midi_tracker.read_midi_file("sounds/dark_ambient_theme.mid");
 
+    int i = 0;
     while (true)
     {
         ALLEGRO_EVENT event;
@@ -43,6 +44,9 @@ inline int show_mission_selector(std::vector<MissionConfig> &mission_configs, AL
         }
         if (event.type == ALLEGRO_EVENT_TIMER)
         {
+            i++;
+            if (i < 2) continue;
+            i = 0;
             al_clear_to_color(al_map_rgb_f(0, 0, 0));
             text_drawer.draw_text(10, 10, "Select mission");
             text_drawer.draw_text(10, 20, "Mission #" +                                                      //

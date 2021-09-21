@@ -151,10 +151,16 @@ int main(int argc, char **argv)
     al_register_event_source(queue, al_get_timer_event_source(timer));
     al_register_event_source(queue, al_get_audio_stream_event_source(audio_stream));
     al_start_timer(timer); // Start the timer
+    Playlist playlist;
+    set_singleton<Playlist>(&playlist);
+    playlist.read_from_file("sounds/playlist.ini");
+    playlist.randomize_order();
+
     auto mission_configs = MissionConfig::read_from_file("config/missions.ini");
     int last_accomplished = -1;
     while (true)
     {
+        playlist.next_file(0);
         auto selected = show_mission_selector(mission_configs, queue, last_accomplished);
         if (selected == -1)
             break;

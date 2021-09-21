@@ -195,8 +195,6 @@ public:
 
     void draw(float x, float y)
     {
-        /*x -= camera_offset_x;
-        y -= camera_offset_y;*/
         if (simple)
             al_draw_bitmap_region(bitmap, sx, sy, w, h, x - w / 2, y - h / 2, flip);
         else
@@ -223,8 +221,6 @@ public:
 
     void draw(float x, float y)
     {
-        /*x -= camera_offset_x;
-        y -= camera_offset_y;*/
         al_draw_bitmap_region(bitmap, sx, sy, w, h, x, y, 0);
     }
 

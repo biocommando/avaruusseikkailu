@@ -35,6 +35,7 @@ class GameObject
     float hitbox_h = 0;
     float direction_angle = 0;
     GameObjectType type;
+    int sub_type = 0;
     TileMap *tiles;
     float health = 100;
     float armor = 1;
@@ -45,6 +46,7 @@ class GameObject
     bool is_shot;
     bool is_collectable;
     VisualFxTool *vfx_tool;
+    int weapon = 0;
 
 public:
     GameObject(Sprite &sprite, GameObjectType type, float hitbox_w, float hitbox_h)
@@ -88,9 +90,34 @@ public:
         health -= damage * armor;
     }
 
-    float get_health()
+    float get_health() const
     {
         return health;
+    }
+
+    float get_armor() const
+    {
+        return armor;
+    }
+
+    int get_weapon() const
+    {
+        return weapon;
+    }
+
+    void set_weapon(int weapon)
+    {
+        this->weapon = weapon;
+    }
+
+    void set_sub_type(int st)
+    {
+        sub_type = st;
+    }
+
+    int get_sub_type() const
+    {
+        return sub_type;
     }
 
     void set_speed(float dx, float dy, int flags = 0)
@@ -229,7 +256,8 @@ public:
         {
             new_y = y + ddy;
             bool did_bounce = false;
-            if (tiles->check_collision(x, new_y, hitbox_w, hitbox_h) != 0)
+            int y_coll = tiles->check_collision(x, new_y, hitbox_w, hitbox_h);
+            if (y_coll != 0)
             {
                 if (is_shot)
                 {
@@ -249,7 +277,8 @@ public:
                 new_y = y;
             }
             new_x = x + ddx;
-            if (tiles->check_collision(new_x, new_y, hitbox_w, hitbox_h) != 0)
+            int x_coll = tiles->check_collision(new_x, new_y, hitbox_w, hitbox_h);
+            if (x_coll != 0)
             {
                 if (is_shot)
                 {
@@ -266,6 +295,11 @@ public:
                     dx = 0;
                 }
                 new_x = x;
+            }
+            // Hazardous terrain
+            if (type == GameObjectType_PLAYER && (x_coll == 2 || y_coll == 2))
+            {
+                deal_damage(1);
             }
             if ((new_x == x && new_y == y) || did_bounce)
             {
@@ -311,19 +345,6 @@ public:
                 const auto col = al_map_rgb_f((5 - i) / 5.0f, i / 5.0f, 0);
                 const auto x0 = x - 15 + i * 5 - camera_offset_x;
                 al_draw_filled_rectangle(x0, sprite_top - 8, x0 + 3, sprite_top - 3, col);
-            }
-            if (type == GameObjectType_PLAYER)
-            {
-                const auto sprite_btm = y + sprite.get_h() / 2 - camera_offset_y;
-                const auto col = al_map_rgb_f(.8, .8, 0);
-                auto max = get_flag(player_ammo_amount_flag + get_flag(weapon_flag)) / 5;
-                if (max > 8)
-                    max = 8;
-                for (int i = max; i > 0; i--)
-                {
-                    const auto x0 = x - 15 + i * 3 - camera_offset_x;
-                    al_draw_filled_rectangle(x0, sprite_btm, x0 + 2, sprite_btm + 5, col);
-                }
             }
             if (acceleration > 0.1)
             {

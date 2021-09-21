@@ -25,6 +25,18 @@
     {
         "type": "collectable",
         "data": {
+            "name": "Medium armor",
+            "sprite": "config/sprite/pickup/rectangle.ini",
+            "type": "armor",
+            "amount": "200",
+            "sound": "9",
+            "sound_key": "20",
+            "cost": "1500"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
             "name": "Mission item 1",
             "sprite": "config/sprite/pickup/star.ini",
             "type": "mission",

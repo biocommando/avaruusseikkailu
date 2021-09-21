@@ -22,6 +22,10 @@
             background-color: blue;
         }
 
+        .hazard {
+            background-color: red;
+        }
+
         .row {
             display: block;
         }
@@ -54,6 +58,7 @@
     <select id="paintType">
         <option value="">Background (b)</option>
         <option value="wall">Wall (w)</option>
+        <option value="hazard">Hazard (h)</option>
     </select>
     <br />
     Add object:
@@ -254,6 +259,8 @@
         }
 
         function handleKeyPress(code) {
+            if (document.activeElement.id === 'objectList')
+                return true
             if (code == 'KeyC') {
                 copyObjectList()
             } else if (code == 'KeyX') {

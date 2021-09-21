@@ -390,6 +390,11 @@ public:
         }
     }
 
+    void kill_all_sfx()
+    {
+        synth.kill_voices(9);
+    }
+
     void process_buffer(float *buf, int size)
     {
         int process_at_idx = 0;

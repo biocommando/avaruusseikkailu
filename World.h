@@ -19,6 +19,16 @@
 #include "VisualFx.h"
 #include "SingletonInjector.h"
 #include "CollectableProfile.h"
+#include "Playlist.h"
+#include <sstream>
+
+extern int screen_w, screen_h;
+
+struct PlrWeaponStatus
+{
+    bool owned;
+    int ammo;
+};
 
 class World
 {
@@ -47,7 +57,8 @@ class World
         {enemy_type_building, 100},
     };
     GameObject *auto_aim_target = nullptr;
-    bool auto_aim_target_changed = true;
+
+    std::map<int, PlrWeaponStatus> player_weapon_status;
 
 public:
     std::map<int, WeaponProfile> weapon_profiles;
@@ -100,7 +111,9 @@ public:
     {
         camera_offset_x = 0;
         camera_offset_y = 0;
-        midi_tracker.read_midi_file(mission_config.music);
+        const auto playlist = get_singleton<Playlist>();
+        midi_tracker.read_midi_file(playlist->get_current_file());
+        text_drawer.add_timed_permanent_text(screen_w / 2, 10, "Now playing: " + playlist->get_current_tilte(), 500);
         midi_tracker.load_sound_effects("sounds/soundfx.mid_meta.ini");
         for (const auto goal : mission_config.mission_goals)
         {
@@ -126,7 +139,7 @@ public:
     void create_shot(GameObject &parent, int weapon_profile = -1)
     {
         if (weapon_profile == -1)
-            weapon_profile = parent.get_flag(weapon_flag);
+            weapon_profile = parent.get_weapon();
         WeaponProfile &wp = weapon_profiles[weapon_profile];
         if (wp.sound > -1)
             midi_tracker.trigger_sfx(wp.sound_key, wp.sound);
@@ -172,9 +185,9 @@ public:
                 collectable.set_position(x + 32 - sprite.get_w() / 2, y + 32 - sprite.get_h() / 2);
             else
                 collectable.set_position(x, y);
-            collectable.set_flag(collectable_type_flag, (int)profile.type);
+            collectable.set_sub_type((int)profile.type);
             collectable.set_flag(collectable_bonus_amount_flag, profile.bonus_amount);
-            collectable.set_flag(weapon_flag, profile.weapon_id);
+            collectable.set_weapon(profile.weapon_id);
             collectable.set_flag(collect_sound_id_flag, profile.sound);
             collectable.set_flag(collect_sound_key_flag, profile.sound_key);
             collectable.set_flag(collectable_original_pos_flag, collectable.get_y());
@@ -210,8 +223,8 @@ public:
             else
                 enemy.set_position(x, y);
             enemy.set_armor(100.0f / e.health);
-            enemy.set_flag(weapon_flag, e.weapon);
-            enemy.set_flag(enemy_type_flag, type);
+            enemy.set_weapon(e.weapon);
+            enemy.set_sub_type(type);
             if (e.spawn_enemy != -1)
             {
                 enemy.set_flag(enemy_spawn_enemy_id_flag, e.spawn_enemy);
@@ -224,6 +237,7 @@ public:
                 enemy.set_flag(enemy_drop_collectable_count_flag, e.drop_collectable_count);
                 enemy.set_flag(enemy_drop_collectable_is_random_flag, e.drop_collectable_is_random);
             }
+            enemy.set_counter(enemy_immune_to_damage_counter_id, 10);
             // Avoid spawning inside a wall... Not a very sophisticated algorithm, let's hope it works at least :D
             int origx = enemy.get_x();
             int origy = enemy.get_y();
@@ -279,21 +293,14 @@ public:
         player->set_position(plr_x + 20, plr_y + 20);
     }
 
-    void give_player_weapon(GameObject *player, int weapon_id)
+    int get_player_ammo(int weapon_id)
     {
-        if (player->get_flag(player_owns_weapon_flag + weapon_id) != 0)
-            return;
-        player->set_flag(player_owns_weapon_flag + weapon_id, 1);
-        for (int i = 0; i < 100; i++)
-        {
-            if (player->get_flag(player_weapon_list_flag + i) == 0)
-            {
-                player->set_flag(player_weapon_list_flag + i, weapon_id);
-                if (i == 0)
-                    player->set_flag(weapon_flag, weapon_id);
-                break;
-            }
-        }
+        return player_weapon_status[weapon_id].ammo;
+    }
+
+    bool check_player_owns_weapon(int weapon_id)
+    {
+        return player_weapon_status[weapon_id].owned;
     }
 
     void progress_game()
@@ -309,7 +316,7 @@ public:
             for (auto &enm : enemies)
             {
                 ai_check_visible(*enm, *player, tile_map);
-                const auto type = enm->get_flag(enemy_type_flag);
+                const auto type = enm->get_sub_type();
                 if (type == enemy_type_ship)
                     ship_ai(*enm, *player, tile_map);
                 else if (type == enemy_type_soldier)
@@ -329,7 +336,7 @@ public:
             auto &enemies = game_object_holder.get_category(GameObjectType_ENEMY);
             for (auto &enm : enemies)
             {
-                if (plr_shot->collides(*enm))
+                if (enm->get_counter(enemy_immune_to_damage_counter_id) == 0 && plr_shot->collides(*enm))
                 {
                     plr_shot->set_health(-1);
                     const auto orig_health = enm->get_health();
@@ -358,7 +365,7 @@ public:
                 {
                     if (player->collides(*collectable))
                     {
-                        const auto type = (CollectableType)collectable->get_flag(collectable_type_flag);
+                        const auto type = (CollectableType)collectable->get_sub_type();
                         if (type != Collectable_HEALTH || player->get_health() < 100)
                         {
                             collectable->set_health(-1);
@@ -390,8 +397,24 @@ public:
     {
         const bool not_buyable = c.cost == -1 ||
                                  // Can't buy weapons already owned
-                                 (c.type == Collectable_WEAPON && (player->get_flag(player_owns_weapon_flag + c.weapon_id)));
+                                 (c.type == Collectable_WEAPON && check_player_owns_weapon(c.weapon_id));
         return !not_buyable && (c.buy_allow_flags & mission_config.buy_allow_flags);
+    }
+
+    void draw_player_ammo_bar()
+    {
+        if (!player)
+            return;
+        const auto sprite_btm = player->get_y() + 16;
+        const auto col = al_map_rgb_f(.8, .8, 0);
+        int max = get_player_ammo(player->get_weapon());
+        if (max > 8)
+            max = 8;
+        for (int i = max; i > 0; i--)
+        {
+            const auto x0 = player->get_x() - 15 + i * 3;
+            al_draw_filled_rectangle(x0, sprite_btm, x0 + 2, sprite_btm + 5, col);
+        }
     }
 
     void progress_and_draw()
@@ -413,6 +436,7 @@ public:
             al_hold_bitmap_drawing(true);
             game_object_holder.draw();
             al_hold_bitmap_drawing(false);
+            draw_player_ammo_bar();
         }
         else
         {
@@ -422,11 +446,11 @@ public:
             al_hold_bitmap_drawing(true);
             game_object_holder.draw();
             al_hold_bitmap_drawing(false);
+            draw_player_ammo_bar();
         }
 
         if (player && show_inventory)
         {
-            extern int screen_w, screen_h;
             const int w = 440, h = 300;
             const auto x0 = screen_w / 2 - w / 2 + camera_offset_x;
             const auto y0 = screen_h / 2 - h / 2 + camera_offset_y;
@@ -453,9 +477,19 @@ public:
                 if (c.type == Collectable_WEAPON)
                     text_drawer.draw_text(x_center, y, "Weapon: " + weapon_profiles[c.weapon_id].name + " [" + std::to_string(c.cost) + "]");
                 else if (c.type == Collectable_AMMO)
-                    text_drawer.draw_text(x_center, y, "Ammo: " + weapon_profiles[c.weapon_id].name + " +" + std::to_string((int)c.bonus_amount) + " [" + std::to_string(c.cost) + "], current: " + std::to_string(player->get_flag(player_ammo_amount_flag + c.weapon_id)));
+                {
+                    std::stringstream ss;
+                    ss << "Ammo: " << weapon_profiles[c.weapon_id].name << " +" << (int)c.bonus_amount << " [" << c.cost << "], current: " << get_player_ammo(c.weapon_id);
+                    text_drawer.draw_text(x_center, y, ss.str());
+                }
                 else if (c.type == Collectable_HEALTH)
                     text_drawer.draw_text(x_center, y, "Health: +" + std::to_string((int)c.bonus_amount) + " [" + std::to_string(c.cost) + "]");
+                else if (c.type == Collectable_ARMOR)
+                {
+                    std::stringstream ss;
+                    ss << "Armor: " << (int)c.bonus_amount << "% [" << c.cost << "], current: " << (int)(100.0f / player->get_armor()) << '%';
+                    text_drawer.draw_text(x_center, y, ss.str());
+                }
                 else
                     text_drawer.draw_text(x_center, y, "Dick in a box [priceless]"); // Misconfiguration
             }
@@ -468,7 +502,6 @@ public:
 
         if (goal_status <= 0)
         {
-            extern int screen_w, screen_h;
             const int w = 200, h = 50;
             const auto x0 = screen_w / 2 - w / 2 + camera_offset_x;
             const auto y0 = screen_h / 2 - h / 2 + camera_offset_y;
@@ -532,7 +565,7 @@ public:
                                             this->auto_aim_target = nullptr;
                                         int sfx_id = sfx_explosion_large;
                                         float expl_rad = 1;
-                                        auto type = obj->get_flag(enemy_type_flag);
+                                        auto type = obj->get_sub_type();
                                         if (type == enemy_type_soldier)
                                         {
                                             sfx_id = sfx_explosion_medium;
@@ -584,8 +617,9 @@ public:
                                         if (obj->get_flag(collect_sound_id_flag) >= 0)
                                             this->midi_tracker.trigger_sfx(obj->get_flag(collect_sound_key_flag),
                                                                            obj->get_flag(collect_sound_id_flag));
-                                        const auto type = (CollectableType)obj->get_flag(collectable_type_flag);
+                                        const auto type = (CollectableType)obj->get_sub_type();
                                         const auto bonus_amt = obj->get_flag(collectable_bonus_amount_flag);
+                                        const auto buyval = obj->get_flag(collectable_buy_value);
                                         auto msg = std::to_string(bonus_amt);
                                         if (type == Collectable_HEALTH)
                                         {
@@ -595,15 +629,43 @@ public:
                                             player->set_health(health_bonus);
                                             msg = "Health +" + msg;
                                         }
+                                        else if (type == Collectable_ARMOR)
+                                        {
+                                            if (player->get_armor() > 100.0f / bonus_amt)
+                                            {
+                                                player->set_armor(100.0f / bonus_amt);
+                                                msg = "Armor " + std::to_string(bonus_amt) + '%';
+                                            }
+                                            else if (buyval > 0)
+                                            {
+                                                msg = std::to_string(buyval) + " coins";
+                                                player->add_to_flag(player_coins_flag, buyval);
+                                            }
+                                            else
+                                            {
+                                                msg = "You already have better armor";
+                                            }
+                                        }
                                         else if (type == Collectable_AMMO)
                                         {
-                                            player->add_to_flag(player_ammo_amount_flag + obj->get_flag(weapon_flag), bonus_amt);
-                                            msg = "+" + msg + " ammo for " + weapon_profiles[obj->get_flag(weapon_flag)].name;
+                                            this->player_weapon_status[obj->get_weapon()].ammo += bonus_amt;
+                                            msg = "+" + msg + " ammo for " + weapon_profiles[obj->get_weapon()].name;
                                         }
                                         else if (type == Collectable_WEAPON)
                                         {
-                                            this->give_player_weapon(player, obj->get_flag(weapon_flag));
-                                            msg = weapon_profiles[obj->get_flag(weapon_flag)].name;
+                                            const auto wp_type = obj->get_weapon();
+                                            if (check_player_owns_weapon(wp_type) && buyval > 0)
+                                            {
+                                                msg = std::to_string(buyval) + " coins";
+                                                player->add_to_flag(player_coins_flag, buyval);
+                                            }
+                                            else
+                                            {
+                                                player_weapon_status[wp_type].owned = true;
+                                                if (player->get_weapon() == 0)
+                                                    player->set_weapon(wp_type);
+                                                msg = weapon_profiles[obj->get_weapon()].name;
+                                            }
                                         }
                                         else if (type == Collectable_COIN)
                                         {
@@ -620,7 +682,7 @@ public:
                                     });
         game_object_holder.clean_up(GameObjectType_PLAYER, [this](GameObject *obj)
                                     {
-                                        midi_tracker.trigger_sfx(255, sfx_thrust, 100, 2);
+                                        midi_tracker.kill_all_sfx();
                                         if (goal_status != 0)
                                         {
                                             this->goal_status = -1;
@@ -650,14 +712,14 @@ public:
         if (!show_inventory && key_status[key_config.auto_aim])
         {
             auto &enemies = game_object_holder.get_category(GameObjectType_ENEMY);
-            if (!auto_aim_target && auto_aim_target_changed)
+            if (!auto_aim_target)
             {
                 float nearest_dist = 1e200;
                 for (auto &enm : enemies)
                 {
                     if (!enm->get_flag(ai_sees_player_flag))
                         continue;
-                    const auto priority = target_priorities[enm->get_flag(enemy_type_flag)];
+                    const auto priority = target_priorities[enm->get_sub_type()];
                     const auto dist = player->get_distance(*enm) * priority;
                     if (dist < nearest_dist)
                     {
@@ -670,7 +732,6 @@ public:
                     auto &vfx = vfx_tool.add(auto_aim_target->get_x(), auto_aim_target->get_y(), 5, 0, 0.5, 0, 20);
                     vfx.rad_delta = 3;
                     VisualFxTool::fade_to_color(vfx, 0.5, 1, 0.5);
-                    auto_aim_target_changed = false;
                     midi_tracker.trigger_sfx(71, 10, 40);
                 }
             }
@@ -692,7 +753,6 @@ public:
         else
         {
             auto_aim_target = nullptr;
-            auto_aim_target_changed = true;
         }
         if (show_inventory)
         {
@@ -730,34 +790,40 @@ public:
                 player->accelerate_in_direction(0.1);
             if (key_status[key_config.down] && player->get_counter(reload_counter_id) == 0)
             {
-                // Get current weapon index in player weapon list
-                int curr_wp = 0;
-                for (int i = 0; i < 100; i++)
+                int next_wp = 0;
+                int first_wp = 0;
+                bool next = false;
+                for (const auto &ws : player_weapon_status)
                 {
-                    if (player->get_flag(player_weapon_list_flag + i) == player->get_flag(weapon_flag))
+                    if (first_wp == 0 && ws.second.owned)
+                        first_wp = ws.first;
+                    if (next && ws.second.owned)
                     {
-                        curr_wp = i;
+                        next_wp = ws.first;
                         break;
                     }
+                    else if (!next)
+                    {
+                        next = ws.first == player->get_weapon();
+                    }
                 }
-                int next_wp = player->get_flag(player_weapon_list_flag + curr_wp + 1);
                 if (next_wp == 0)
-                    next_wp = player->get_flag(player_weapon_list_flag);
-                if (next_wp != player->get_flag(weapon_flag))
+                    next_wp = first_wp;
+                if (next_wp != player->get_weapon())
                 {
                     midi_tracker.trigger_sfx(39, 12, 100);
                     player->set_counter(reload_counter_id, 30);
-                    player->set_flag(weapon_flag, next_wp);
+                    player->set_weapon(next_wp);
                     text_drawer.add_timed_permanent_text(player->get_x(), player->get_y() + 20, weapon_profiles[next_wp].name, 100);
                 }
             }
         }
         if (key_status[key_config.shoot] && player->get_counter(reload_counter_id) == 0)
         {
-            const auto ammo = player->get_flag(player_ammo_amount_flag + player->get_flag(weapon_flag));
+            const auto ammo = player_weapon_status[player->get_weapon()].ammo;
             if (ammo > 0)
             {
-                player->set_flag(player_ammo_amount_flag + player->get_flag(weapon_flag), ammo - 1);
+                player_weapon_status[player->get_weapon()].ammo--;
                 create_shot(*player);
             }
         }
@@ -765,8 +831,8 @@ public:
             inventory_counter--;
         if (key_status[key_config.inventory] && inventory_counter == 0 && goal_status > 0)
         {
+            midi_tracker.kill_all_sfx();
             midi_tracker.trigger_sfx(60, sfx_select, 100);
-            midi_tracker.trigger_sfx(255, sfx_thrust, 100, 2);
             show_inventory = !show_inventory;
             inventory_counter = 30;
         }
@@ -792,8 +858,9 @@ public:
                             for (int i = 0; i < 60; i++)
                                 new_collectable->progress();
                             new_collectable->set_counter(collectable_not_collectable_counter, 30);
+                            new_collectable->set_flag(collectable_buy_value, c.cost);
                             coins -= c.cost;
-                            inventory_counter = 10;
+                            inventory_counter = 30;
                         }
                         player->set_flag(player_coins_flag, coins);
                         break;

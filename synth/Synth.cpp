@@ -181,6 +181,17 @@ void Synth::kill_voices()
     voice_lock.unlock();
 }
 
+void Synth::kill_voices(int channel)
+{
+    voice_lock.lock();
+    for (int i = voices.size() - 1; i >= 0; i--)
+    {
+        if (voices[i].channel == channel)
+            voices.erase(voices.begin() + i);
+    }
+    voice_lock.unlock();
+}
+
 static inline float soft_clip(const float f)
 {
 #ifdef NO_SOFTCLIP

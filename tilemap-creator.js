@@ -1,5 +1,5 @@
 function createTilemap(map, tileFile, outputFileName) {
-    map.forEach(x => x.type = x.type === 'wall' ? 'x' : '.')
+    map.forEach(x => x.obstacleType = x.type === 'wall' ? 'x' : '.')
 
     function checkPattern(point, pattern) {
         let i = 0
@@ -9,7 +9,7 @@ function createTilemap(map, tileFile, outputFileName) {
                     const point2 = map.find(p => p.x === x && p.y === y)
                     if (!point2 && pattern[i] !== 'x')
                         return false
-                    if (point2 && point2.type !== pattern[i])
+                    if (point2 && point2.obstacleType !== pattern[i])
                         return false
                 }
                 i++
@@ -191,11 +191,15 @@ function createTilemap(map, tileFile, outputFileName) {
         point.objectIds.forEach(obj => {
             result.push({ description: 'object', x: point.x, y: point.y, type: obj })
         })
-        if (point.type === '.')
+        if (point.type === '')
         {
             let sx = Math.floor(Math.random() * (5 - 1e-6))
             let sy = Math.floor(Math.random() * (2 - 1e-6)) + 6
             result.push({ x: point.x, y: point.y, sx, sy, description: 'background' })
+        }
+        else if (point.type === 'hazard')
+        {
+            result.push({ x: point.x, y: point.y, sx: 6, sy: 1, description: 'hazard' })
         }
     })
 
@@ -219,7 +223,11 @@ function createTilemap(map, tileFile, outputFileName) {
             output += `sx=${point.sx * 32}\r\n`
         if (point.sy !== prev.sy)
             output += `sy=${point.sy * 32}\r\n`
-        const props = point.description !== 'background' ? 1 : 0
+        let props = 1
+        if (point.description === 'background')
+            props = 0
+        if (point.description === 'hazard')
+            props = 2
         if (props !== prev.props)
             output += `props=${props}\r\n`
         prev = { ...point, props }

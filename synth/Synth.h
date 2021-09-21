@@ -87,4 +87,6 @@ public:
     void process(float *buffer_left, float *buffer_right, int buffer_size);
 
     void kill_voices();
+
+    void kill_voices(int channel);
 };

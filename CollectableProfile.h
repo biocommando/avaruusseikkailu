@@ -7,6 +7,7 @@ enum CollectableType
     Collectable_AMMO,
     Collectable_WEAPON,
     Collectable_HEALTH,
+    Collectable_ARMOR,
     Collectable_COIN,
     Collectable_MISSION_ITEM,
 };
@@ -53,6 +54,8 @@ public:
                               }
                               else if (val == "health")
                                   m[id].type = Collectable_HEALTH;
+                              else if (val == "armor")
+                                  m[id].type = Collectable_ARMOR;
                               else if (val == "coin")
                                   m[id].type = Collectable_COIN;
                               else if (val == "mission")
