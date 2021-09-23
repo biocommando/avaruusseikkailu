@@ -29,6 +29,7 @@ Featuret:
 [x] Auto target nearest enemy (on button press)
 [ ] Auto aim -parannukset (ottaisi kulman huomioon)
 [x] Sotilaan randomit tapahtumat
+[x] Vivut jotka avaavat / sulkevat 'ovia'
 
 Bugit:
 [x] Turrettien suunta vasemmalle ammuttaessa väärä

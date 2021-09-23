@@ -1,4 +1,4 @@
-
+#include "log.h"
 #include "World.h"
 #include "MissionMenu.h"
 #include "allegro5/allegro_audio.h"
@@ -170,10 +170,6 @@ int main(int argc, char **argv)
         if (status == 0 && selected > last_accomplished)
             last_accomplished = selected;
     }
-    /*for (auto &mission_config : mission_configs)
-    {
-        play_mission(mission_config, queue);
-    }*/
     unload_bitmaps();
     al_uninstall_audio();
 

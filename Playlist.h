@@ -1,15 +1,22 @@
 #pragma once
+#include <ctime>
 #include "ConfigFile.h"
 #include <algorithm>
+#include <random>
+#include "log.h"
 
 class Playlist
 {
     std::vector<int> order;
     std::vector<std::string> midi_files;
     std::vector<std::string> titles;
+    std::default_random_engine rng;
     int pos = -1;
 
 public:
+    Playlist() : rng(time(nullptr))
+    {}
+
     void read_from_file(const std::string &file)
     {
         ConfigFile cf(
@@ -72,7 +79,6 @@ public:
     void randomize_order()
     {
         pos = -1;
-        std::sort(order.begin(), order.end(), [](int a, int b)
-                  { return rand() % 2; });
+        std::shuffle(order.begin(), order.end(), rng);
     }
 };

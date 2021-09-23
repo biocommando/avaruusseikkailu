@@ -1,0 +1,33 @@
+[
+    {
+        "type": "enemy",
+        "link_id": "beetle",
+        "data": {
+            "name": "Beetle",
+            "type": "ship",
+            "sprite": "config/sprite/ship/beetle.ini",
+            "health": "100",
+            "weapon": "<weapon.enm_laser>",
+            "spawn_enemy": "<enemy.Soldier>",
+            "drop_collectable": "<collectable.medium_health>"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_laser",
+        "data": {
+            "name": "enm_laser",
+            "sprite": "config/sprite/shot/laser/small_green.ini",
+            "damage": "14",
+            "shots": "1",
+            "random_spread": "10",
+            "alive_timer": "20",
+            "reload": "7",
+            "speed": "20",
+            "affected_by_gravity": "0",
+            "blast_radius": "10",
+            "sound": "7",
+            "sound_key": "80"
+        }
+    }
+]

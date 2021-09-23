@@ -2,7 +2,7 @@
     {
         "type": "enemy",
         "data": {
-            "name": "Beetle",
+            "name": "Beetle_",
             "type": "ship",
             "sprite": "config/sprite/ship/beetle.ini",
             "health": "60",
@@ -19,7 +19,7 @@
             "sprite": "config/sprite/ship/hawk.ini",
             "health": "150",
             "weapon": "<weapon.Small shot, damage+>",
-            "spawn_enemy": "<enemy.Beetle>",
+            "spawn_enemy": "<enemy.Beetle_>",
             "spawn_enemy_count": "4",
             "drop_collectable": "<collectable.A few coins>",
             "drop_collectable_count": "2",

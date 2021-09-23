@@ -1,0 +1,72 @@
+[
+    {
+        "type": "enemy",
+        "link_id": "huge",
+        "data": {
+            "name": "Huge",
+            "type": "ship",
+            "sprite": "config/sprite/ship/huge.ini",
+            "health": "500",
+            "weapon": "<weapon.enm_clusterfuck_gun>",
+            "spawn_enemy": "<enemy.hawk>",
+            "spawn_enemy_count": "2",
+            "drop_collectable": "<collectable.coins>",
+            "drop_collectable_count": "15",
+            "drop_collectable_is_random": "60"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_clusterfuck_gun",
+        "data": {
+            "name": "enm_clusterfuck_gun",
+            "sprite": "config/sprite/shot/laser/large_yellow.ini",
+            "damage": "30",
+            "shots": "16",
+            "spread": "360",
+            "alive_timer": "10",
+            "reload": "60",
+            "speed": "10",
+            "affected_by_gravity": "0",
+            "blast_radius": "80",
+            "sound": "7",
+            "sound_key": "80",
+            "number_of_child_particles": "2",
+            "child_particle_id": "<weapon.enm_clusterfuck_gun.cluster>"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_clusterfuck_gun.cluster",
+        "data": {
+            "name": "enm_clusterfuck_gun.cluster",
+            "sprite": "config/sprite/shot/shrapnel/yellow.ini",
+            "damage": "10",
+            "shots": "2",
+            "spread": 45,
+            "random_spread": "10",
+            "alive_timer": "20",
+            "speed": "5",
+            "affected_by_gravity": "1",
+            "bouncy": 1,
+            "blast_radius": "30",
+            "number_of_child_particles": "1",
+            "child_particle_id": "<weapon.enm_clusterfuck_gun.cluster.cluster>"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_clusterfuck_gun.cluster.cluster",
+        "data": {
+            "name": "enm_clusterfuck_gun.cluster.cluster",
+            "sprite": "config/sprite/shot/small/yellow.ini",
+            "damage": "5",
+            "shots": "16",
+            "spread": 360,
+            "alive_timer": "10",
+            "speed": "15",
+            "affected_by_gravity": "1",
+            "blast_radius": "10"
+        }
+    }
+]

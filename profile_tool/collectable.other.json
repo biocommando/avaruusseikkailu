@@ -13,6 +13,31 @@
     },
     {
         "type": "collectable",
+        "link_id": "medium_health",
+        "data": {
+            "name": "Medium health",
+            "amount": "50",
+            "sprite": "config/sprite/pickup/cross.ini",
+            "type": "health",
+            "sound": "10",
+            "sound_key": "34",
+            "cost": "500"
+        }
+    },
+    {
+        "type": "collectable",
+        "data": {
+            "name": "A few coins",
+            "sprite": "config/sprite/pickup/small_circle.ini",
+            "type": "coin",
+            "amount": "100",
+            "sound": "9",
+            "sound_key": "69"
+        }
+    },
+    {
+        "type": "collectable",
+        "link_id": "coins",
         "data": {
             "name": "A few coins",
             "sprite": "config/sprite/pickup/small_circle.ini",
@@ -53,6 +78,50 @@
             "type": "health",
             "sound": "10",
             "sound_key": "44"
+        }
+    },
+    {
+        "type": "collectable",
+        "link_id": "tiny_health",
+        "data": {
+            "name": "Tiny health",
+            "amount": "5",
+            "sprite": "config/sprite/pickup/cross.ini",
+            "type": "health",
+            "sound": "10",
+            "sound_key": "54"
+        }
+    },
+    {
+        "type": "collectable",
+        "link_id": "flip_type_1",
+        "data": {
+            "name": "Flip type 1",
+            "sprite": "config/sprite/pickup/circle.ini",
+            "type": "modify_map",
+            "flip_props": "3",
+            "hidden_sx": "192",
+            "hidden_sy": "224",
+            "shown_sx": "160",
+            "shown_sy": "224",
+            "sound": "10",
+            "sound_key": "54"
+        }
+    },
+    {
+        "type": "collectable",
+        "link_id": "flip_type_2",
+        "data": {
+            "name": "Flip type 2",
+            "sprite": "config/sprite/pickup/circle.ini",
+            "type": "modify_map",
+            "flip_props": "4",
+            "hidden_sx": "192",
+            "hidden_sy": "224",
+            "shown_sx": "160",
+            "shown_sy": "224",
+            "sound": "10",
+            "sound_key": "54"
         }
     }
 ]

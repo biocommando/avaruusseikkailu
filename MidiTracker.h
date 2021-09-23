@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
-#include <iostream>
+#include "log.h"
 #include "ConfigFile.h"
 
 struct MidiEvent
@@ -30,6 +30,18 @@ class MidiTracker
     std::vector<MidiEvent> sfx_release;
     FILE *f = nullptr;
     Synth synth;
+
+    void clear_state()
+    {
+        tracks.clear();
+        next_track_event_at.clear();
+        next_track_event_idx.clear();
+        sfx_release.clear();
+        synth.kill_voices();
+        pos = 0;
+        tick_pos = 0;
+        tracks_at_end = 0;
+    }
 
     void change_endianness(void *data, int length)
     {
@@ -317,17 +329,12 @@ public:
 
     void read_midi_file(const std::string &file)
     {
+        clear_state();
         read_metadata(file + "_meta.ini");
         f = fopen(file.c_str(), "rb");
         unsigned short num_tracks;
         unsigned short division;
         unsigned short format;
-        synth.kill_voices();
-        tracks.clear();
-        next_track_event_at.clear();
-        next_track_event_idx.clear();
-        tracks_at_end = 0;
-        pos = 0;
         while (!feof(f))
         {
             std::string chunk_type;

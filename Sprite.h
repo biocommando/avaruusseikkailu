@@ -83,6 +83,7 @@ class Sprite
         frames.push_back(f);
         frame = 0;
     }
+
 public:
     Sprite()
     {
@@ -212,6 +213,11 @@ class TileSprite
     int h;
     int sx = 0;
     int sy = 0;
+    int anim_frames = 1;
+    int anim_frame_len = 5;
+    int anim_counter = 0;
+    int anim_frame = 0;
+    int anim_base_sx = 0;
 
 public:
     TileSprite(const std::string &file, int w, int h, int sx, int sy) : w(w), h(h), sx(sx), sy(sy)
@@ -222,6 +228,34 @@ public:
     void draw(float x, float y)
     {
         al_draw_bitmap_region(bitmap, sx, sy, w, h, x, y, 0);
+    }
+
+    void set_animated(int frames, int frame_len)
+    {
+        anim_frames = frames;
+        anim_frame_len = frame_len;
+        anim_base_sx = sx;
+    }
+
+    void progress()
+    {
+        if (anim_frames == 1)
+            return;
+        anim_counter++;
+        if (anim_counter == anim_frame_len)
+        {
+            anim_counter = 0;
+            anim_frame++;
+            if (anim_frame == anim_frames)
+                anim_frame = 0;
+            sx = anim_base_sx + anim_frame * w;
+        }
+    }
+
+    void set_s_xy(int x, int y)
+    {
+        sx = x;
+        sy = y;
     }
 
     void debug()

@@ -47,6 +47,7 @@ class GameObject
     bool is_collectable;
     VisualFxTool *vfx_tool;
     int weapon = 0;
+    int collision_props = 0;
 
 public:
     GameObject(Sprite &sprite, GameObjectType type, float hitbox_w, float hitbox_h)
@@ -153,6 +154,11 @@ public:
         return flags[id];
     }
 
+    int get_collision_props() const
+    {
+        return collision_props;
+    }
+
     void add_speed(float dx, float dy)
     {
         this->dx += dx;
@@ -257,7 +263,7 @@ public:
             new_y = y + ddy;
             bool did_bounce = false;
             int y_coll = tiles->check_collision(x, new_y, hitbox_w, hitbox_h);
-            if (y_coll != 0)
+            if (y_coll > 0)
             {
                 if (is_shot)
                 {
@@ -278,7 +284,7 @@ public:
             }
             new_x = x + ddx;
             int x_coll = tiles->check_collision(new_x, new_y, hitbox_w, hitbox_h);
-            if (x_coll != 0)
+            if (x_coll > 0)
             {
                 if (is_shot)
                 {
@@ -296,11 +302,7 @@ public:
                 }
                 new_x = x;
             }
-            // Hazardous terrain
-            if (type == GameObjectType_PLAYER && (x_coll == 2 || y_coll == 2))
-            {
-                deal_damage(1);
-            }
+            collision_props = x_coll == 0 ? y_coll : x_coll;
             if ((new_x == x && new_y == y) || did_bounce)
             {
                 break;
@@ -400,11 +402,15 @@ public:
     {
         for (auto &objv : objects)
         {
+            if (objv.first == GameObjectType_PLAYER)
+                continue;
             for (auto &obj : objv.second)
             {
                 obj->draw();
             }
         }
+        for (auto &obj : objects[GameObjectType_PLAYER])
+            obj->draw();
     }
 
     void progress()

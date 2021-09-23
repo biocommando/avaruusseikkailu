@@ -1,0 +1,33 @@
+[
+    {
+        "type": "enemy",
+        "link_id": "bat",
+        "data": {
+            "name": "Bat",
+            "type": "ship",
+            "sprite": "config/sprite/ship/bat.ini",
+            "health": "50",
+            "weapon": "<weapon.enm_rapid_dual_laser>",
+            "spawn_enemy": "<enemy.round>",
+            "spawn_enemy_count": 2
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_rapid_dual_laser",
+        "data": {
+            "name": "enm_rapid_dual_laser",
+            "sprite": "config/sprite/shot/laser/small_red.ini",
+            "damage": "12",
+            "shots": "2",
+            "random_spread": "10",
+            "alive_timer": "20",
+            "reload": "4",
+            "speed": "20",
+            "affected_by_gravity": "0",
+            "blast_radius": "10",
+            "sound": "7",
+            "sound_key": "80"
+        }
+    }
+]

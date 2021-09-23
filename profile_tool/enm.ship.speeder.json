@@ -1,0 +1,13 @@
+{
+    "type": "enemy",
+    "link_id": "speeder",
+    "data": {
+        "name": "Speeder",
+        "type": "ship",
+        "sprite": "config/sprite/ship/speeder.ini",
+        "health": "60",
+        "weapon": "<weapon.enm_rapid_pulse_gun>",
+        "spawn_enemy": "<enemy.Soldier>",
+        "drop_collectable": "<collectable.tiny_health>"
+    }
+}

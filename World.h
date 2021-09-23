@@ -21,6 +21,7 @@
 #include "CollectableProfile.h"
 #include "Playlist.h"
 #include <sstream>
+#include "log.h"
 
 extern int screen_w, screen_h;
 
@@ -192,6 +193,14 @@ public:
             collectable.set_flag(collect_sound_key_flag, profile.sound_key);
             collectable.set_flag(collectable_original_pos_flag, collectable.get_y());
             collectable.set_flag(collectable_float_bounce_amount_flag, randomint(0, 6));
+            if (profile.type == Collectable_MODIFY_MAP)
+            {
+                collectable.set_flag(collectable_flip_props_flag, profile.flip_props);
+                collectable.set_flag(collectable_hide_sx_flag, profile.hidden_sprite_x);
+                collectable.set_flag(collectable_hide_sy_flag, profile.hidden_sprite_y);
+                collectable.set_flag(collectable_show_sx_flag, profile.shown_sprite_x);
+                collectable.set_flag(collectable_show_sy_flag, profile.shown_sprite_y);
+            }
             return &collectable;
         }
         return nullptr;
@@ -241,7 +250,7 @@ public:
             // Avoid spawning inside a wall... Not a very sophisticated algorithm, let's hope it works at least :D
             int origx = enemy.get_x();
             int origy = enemy.get_y();
-            while (tile_map.check_collision(enemy.get_x(), enemy.get_y(), hitbox_w, hitbox_h))
+            while (tile_map.check_collision(enemy.get_x(), enemy.get_y(), hitbox_w, hitbox_h) > 0)
             {
                 enemy.set_position(origx + randomint(-16, 16), origy + randomint(-16, 16));
             }
@@ -390,6 +399,12 @@ public:
                     collectable->set_speed(0, 0);
                 }
             }
+
+            const auto coll = player->get_collision_props();
+            if (coll == 2) // hazard
+            {
+                player->deal_damage(1);
+            }
         }
     }
 
@@ -406,10 +421,15 @@ public:
         if (!player)
             return;
         const auto sprite_btm = player->get_y() + 16;
-        const auto col = al_map_rgb_f(.8, .8, 0);
-        int max = get_player_ammo(player->get_weapon());
+        const auto col = player->get_counter(reload_counter_id) == 0
+                             ? al_map_rgb_f(.8, .8, 0)
+                             : al_map_rgb_f(.8, 0, 0);
+        const auto ammo = get_player_ammo(player->get_weapon());
+        int max = ammo / 5;
         if (max > 8)
             max = 8;
+        else if (max == 0 && ammo > 0)
+            max = 1;
         for (int i = max; i > 0; i--)
         {
             const auto x0 = player->get_x() - 15 + i * 3;
@@ -460,7 +480,6 @@ public:
             al_draw_filled_rectangle(x0, y0, x0 + w, y0 + h,
                                      al_map_rgb_f(0.1, 0.1, 0.1));
             int y = y0 + 15;
-            //text_drawer.set_use_camera_offset(false);
             text_drawer.draw_text(x_center, y, "B L A C K  M A R K E T");
             y += 15;
             text_drawer.draw_text(x_center, y, "Coins: " + std::to_string(player->get_flag(player_coins_flag)));
@@ -497,7 +516,6 @@ public:
             if (inventory_cursor > inventory_cursor_max)
                 inventory_cursor = inventory_cursor_max;
             text_drawer.draw_text(x_center, y0 + h - 10, "up/down = select, enter = buy weapon / ammo");
-            // text_drawer.set_use_camera_offset(true);
         }
 
         if (goal_status <= 0)
@@ -509,7 +527,6 @@ public:
                                      al_map_rgb_f(0.2, 0.2, 0.2));
             al_draw_filled_rectangle(x0, y0, x0 + w, y0 + h,
                                      al_map_rgb_f(0.1, 0.1, 0.1));
-            //text_drawer.set_use_camera_offset(false);
             if (goal_status == 0)
             {
                 text_drawer.draw_text(screen_w / 2 + camera_offset_x, y0 + 15, "MISSION COMPLETED");
@@ -520,7 +537,6 @@ public:
                 text_drawer.draw_text(screen_w / 2 + camera_offset_x, y0 + 15, "MISSION FAILED");
                 text_drawer.draw_text(screen_w / 2 + camera_offset_x, y0 + 30, "Retry? Y/N");
             }
-            //text_drawer.set_use_camera_offset(true);
         }
 
         text_drawer.draw_timed_permanent_texts();
@@ -619,7 +635,7 @@ public:
                                                                            obj->get_flag(collect_sound_id_flag));
                                         const auto type = (CollectableType)obj->get_sub_type();
                                         const auto bonus_amt = obj->get_flag(collectable_bonus_amount_flag);
-                                        const auto buyval = obj->get_flag(collectable_buy_value);
+                                        const auto buyval = obj->get_flag(collectable_buy_value_flag);
                                         auto msg = std::to_string(bonus_amt);
                                         if (type == Collectable_HEALTH)
                                         {
@@ -678,6 +694,37 @@ public:
                                             if (--this->retrieve_target == 0)
                                                 this->goal_status--;
                                         }
+                                        else if (type == Collectable_MODIFY_MAP)
+                                        {
+                                            msg = "";
+                                            const auto props = obj->get_flag(collectable_flip_props_flag);
+                                            const auto temporary = 9999999;
+
+                                            tile_map.modify_map_props(props, temporary, [this](Tile &t)
+                                                                      {
+                                                                          auto &vfx = vfx_tool.add((t.get_x() + t.get_x2()) / 2,
+                                                                                                   (t.get_y() + t.get_y2()) / 2,
+                                                                                                   (t.get_y2() - t.get_y()) / 2, 1, 1, 1, 20);
+                                                                          VisualFxTool::disappear(vfx);
+                                                                      });
+                                            auto sx = obj->get_flag(collectable_show_sx_flag);
+                                            auto sy = obj->get_flag(collectable_show_sy_flag);
+                                            tile_map.modify_map_props(-props, props, [this, &sx, &sy](Tile &t)
+                                                                      { 
+                                                                          t.get_sprite()->set_s_xy(sx, sy);
+                                                                          for (auto enemy : this->game_object_holder.get_category(GameObjectType_ENEMY))
+                                                                          {
+                                                                              if (t.check_point_inside(enemy->get_x(), enemy->get_y()))
+                                                                              {
+                                                                                  enemy->set_health(-1);
+                                                                              }
+                                                                          }
+                                                                    });
+                                            sx = obj->get_flag(collectable_hide_sx_flag);
+                                            sy = obj->get_flag(collectable_hide_sy_flag);
+                                            tile_map.modify_map_props(temporary, -props, [&sx, &sy](Tile &t)
+                                                                      { t.get_sprite()->set_s_xy(sx, sy); });
+                                        }
                                         this->text_drawer.add_timed_permanent_text(obj->get_x(), obj->get_y(), msg, 40);
                                     });
         game_object_holder.clean_up(GameObjectType_PLAYER, [this](GameObject *obj)
@@ -688,7 +735,7 @@ public:
                                             this->goal_status = -1;
                                             this->midi_tracker.read_midi_file("sounds/end_screen.mid");
                                         }
-                                        this->midi_tracker.trigger_sfx(SFX_KEY(explosion), sfx_explosion_large);
+                                        this->midi_tracker.trigger_sfx(sfx_explosion_key_min, sfx_explosion_large);
                                         for (int x_offs = -1; x_offs <= 1; x_offs++)
                                             for (int y_offs = -1; y_offs <= 1; y_offs++)
                                                 this->explosions.push_back(create_explosion(obj->get_x() + x_offs * 40, obj->get_y() + y_offs * 40, 2));
@@ -858,7 +905,7 @@ public:
                             for (int i = 0; i < 60; i++)
                                 new_collectable->progress();
                             new_collectable->set_counter(collectable_not_collectable_counter, 30);
-                            new_collectable->set_flag(collectable_buy_value, c.cost);
+                            new_collectable->set_flag(collectable_buy_value_flag, c.cost);
                             coins -= c.cost;
                             inventory_counter = 30;
                         }

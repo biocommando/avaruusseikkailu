@@ -1,5 +1,6 @@
 #pragma once
 #include "Sprite.h"
+#include <functional>
 
 constexpr bool check_is_inside_box(float point_x, float point_y, float x0, float y0, float x1, float y1)
 {
@@ -51,6 +52,8 @@ public:
     int get_y2() const { return y2; }
     int get_properties() const { return properties; }
 
+    void set_properties(int prop) { properties = prop; }
+
     void debug()
     {
         std::cout << "TILE@" << std::to_string(x) << ',' << std::to_string(y)
@@ -69,8 +72,14 @@ public:
     {
     }
 
+    TileSprite *get_sprite()
+    {
+        return &s;
+    }
+
     void draw()
     {
+        s.progress();
         s.draw(x, y);
     }
 };
@@ -169,6 +178,13 @@ public:
                 if (y + h > this->h)
                     this->h = y + h;
                 Tile t(x, y, w, h, ts, std::stoi(m["props"]));
+                auto animation_in_use = std::stoi(m["a"]);
+                if (animation_in_use)
+                {
+                    auto animation_frames = std::stoi(m["a_fnum"]);
+                    auto animation_frame_len = std::stoi(m["a_flen"]);
+                    t.get_sprite()->set_animated(animation_frames, animation_frame_len);
+                }
                 tiles.push_back(t);
             }
             else if (s == "set object")
@@ -205,7 +221,7 @@ public:
         for (auto &t : logical_tiles)
         {
             const auto p = t.check_collision(cx, cy, hb_w, hb_h);
-            if (p != 0)
+            if (p > 0)
                 return p;
         }
         return 0;
@@ -216,10 +232,27 @@ public:
         for (auto &t : logical_tiles)
         {
             const auto p = t.check_point_inside(x, y);
-            if (p != 0)
+            if (p > 0)
                 return p;
         }
         return 0;
+    }
+
+    void modify_map_props(int props_from, int props_to, std::function<void(Tile &t)> onModify)
+    {
+        for (auto &t : logical_tiles)
+        {
+            if (t.get_properties() == props_from)
+                t.set_properties(props_to);
+        }
+        for (auto &t : tiles)
+        {
+            if (t.get_properties() == props_from)
+            {
+                onModify(t);
+                t.set_properties(props_to);
+            }
+        }
     }
 
     void debug()

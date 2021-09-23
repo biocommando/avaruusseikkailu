@@ -17,10 +17,12 @@ http.createServer((req, res) => {
                 let objectType
                 const mapObjectProfile = x => {
                     if (x[0] === 'id') {
-                        objectType = { id: Number(x[1]), name: '??' }
+                        objectType = { id: Number(x[1]), name: '??', type: '??' }
                         objectTypes.push(objectType)
                     } else if (x[0] === 'name') {
                         objectType.name = x[1]
+                    } else if (x[0] === 'type') {
+                        objectType.type = x[1]
                     }
                 }
                 fs.readFileSync('config/profiles/collectable_profiles.ini').toString()

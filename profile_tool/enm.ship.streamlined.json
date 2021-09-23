@@ -1,0 +1,34 @@
+[
+    {
+        "type": "enemy",
+        "link_id": "streamlined",
+        "data": {
+            "name": "Streamlined",
+            "type": "ship",
+            "sprite": "config/sprite/ship/streamlined.ini",
+            "health": "75",
+            "weapon": "<weapon.enm_rapid_bouncy_gun>",
+            "drop_collectable": "<collectable.coins>",
+            "drop_collectable_count": 2
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_rapid_bouncy_gun",
+        "data": {
+            "name": "enm_rapid_bouncy_gun",
+            "sprite": "config/sprite/shot/ball/purple.ini",
+            "damage": "16",
+            "shots": "1",
+            "random_spread": "25",
+            "alive_timer": "30",
+            "reload": "3",
+            "speed": "6",
+            "affected_by_gravity": "1",
+            "bouncy": "1",
+            "blast_radius": "40",
+            "sound": "7",
+            "sound_key": "80"
+        }
+    }
+]

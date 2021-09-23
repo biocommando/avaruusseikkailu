@@ -57,11 +57,12 @@
     },
     {
         "type": "collectable",
+        "link_id": "Carpet bomb ammo",
         "data": {
             "name": "Carpet bomb ammo",
             "sprite": "config/sprite/pickup/pole.ini",
             "type": "ammo_<weapon.Carpet bomb>",
-            "amount": "15",
+            "amount": "1",
             "sound": "6",
             "sound_key": "88",
             "cost": "100"

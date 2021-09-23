@@ -1,5 +1,8 @@
 function createTilemap(map, tileFile, outputFileName) {
-    map.forEach(x => x.obstacleType = x.type === 'wall' ? 'x' : '.')
+    map.forEach(x => {
+        x.obstacleType = x.type === 'props_1' ? 'x' : '.'
+        x.props = Number(x.type.replace('props_', '').replace('m', '-'))
+    })
 
     function checkPattern(point, pattern) {
         let i = 0
@@ -35,7 +38,7 @@ function createTilemap(map, tileFile, outputFileName) {
             return
         blockTileAdd = true
         const { sx, sy, description } = tileType
-        result.push({ x: point.x, y: point.y, sx, sy, description })
+        result.push({ x: point.x, y: point.y, sx, sy, description, props: point.props })
     }
 
     function randomWall() {
@@ -43,7 +46,7 @@ function createTilemap(map, tileFile, outputFileName) {
         const sy = Math.floor(Math.random() * (2 - 1e-6) + 1)
         if (sx === 4 && sy === 2)
             return randomWall()
-        return { sx, sy, description: "generic wall" }
+        return { sx, sy, description: "generic wall", props: 1 }
     }
 
     map.forEach((point, i) => {
@@ -170,42 +173,40 @@ function createTilemap(map, tileFile, outputFileName) {
                 X, X, _,
                 X, X, $
             ], () => tile(point, { sx: 2, sy: 3, description: "border-angle" }))
-        /*if (point.type === '.') {
-            if (point.color.join('-') === '255-0-0')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 1 })
-            else if (point.color.join('-') === '255-255-0')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 2 })
-            else if (point.color.join('-') === '255-127-0')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 3 })
-            else if (point.color.join('-') === '255-0-255')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 0 })
-            else if (point.color.join('-') === '127-127-127')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 101 })
-            else if (point.color.join('-') === '200-200-200')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 102 })
-            else if (point.color.join('-') === '220-220-220')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 103 })
-            else if (point.color.join('-') === '100-100-100')
-                result.push({ description: 'object', x: point.x, y: point.y, type: 104 })
-        }*/
+        // If the logic above failed to place a wall, place a random wall
+        if (point.props === 1)
+            tile(point, randomWall())
         point.objectIds.forEach(obj => {
-            result.push({ description: 'object', x: point.x, y: point.y, type: obj })
+            result.push({ description: 'object', x: point.x, y: point.y, type: obj.id, objectType: obj.type})
         })
-        if (point.type === '')
-        {
+        if (point.props === 0) {
             let sx = Math.floor(Math.random() * (5 - 1e-6))
             let sy = Math.floor(Math.random() * (2 - 1e-6)) + 6
-            result.push({ x: point.x, y: point.y, sx, sy, description: 'background' })
+            result.push({ x: point.x, y: point.y, sx, sy, description: 'background', props: point.props })
         }
-        else if (point.type === 'hazard')
-        {
-            result.push({ x: point.x, y: point.y, sx: 6, sy: 1, description: 'hazard' })
+        else if (point.props === 2) {
+            result.push({
+                x: point.x, y: point.y, sx: 5, sy: 6, description: 'hazard',
+                a: 1, a_flen: 10, a_fnum: 3, props: point.props
+            })
+        } else if ((point.props > 2 && point.props < 10) || (point.props < -2 && point.props > -10)) {
+            result.push({
+                x: point.x, y: point.y, sx: 5 + (point.props > 0 ? 0 : 1), sy: 7, description: 'flippable',
+                props: point.props
+            })
         }
+    })
+
+    result.sort((a, b) => {
+        if (a.objectType === b.objectType) return 0
+        if (a.objectType === 'building') return -1
+        if (b.objectType === 'building') return 1
+        return 0
     })
 
     let output = `sprite_sheet=${tileFile}\r\nw=32\r\nh=32\r\n`
 
-    let prev = { x: -1, sx: -1, sy: -1, y: -1, props: -1 }
+    let prev = { x: -1, sx: -1, sy: -1, y: -1, props: -1, a_fnum: -1, a_flen: -1, a: 0, props: undefined }
     result.forEach(point => {
         if (point.description === 'object') {
             output += `obj_x=${point.x * 32}\r\n`
@@ -223,14 +224,17 @@ function createTilemap(map, tileFile, outputFileName) {
             output += `sx=${point.sx * 32}\r\n`
         if (point.sy !== prev.sy)
             output += `sy=${point.sy * 32}\r\n`
-        let props = 1
-        if (point.description === 'background')
-            props = 0
-        if (point.description === 'hazard')
-            props = 2
-        if (props !== prev.props)
-            output += `props=${props}\r\n`
-        prev = { ...point, props }
+        if (point.a) {
+            if (point.a_fnum !== prev.a_fnum)
+                output += `a_fnum=${point.a_fnum}\r\n`
+            if (point.a_flen !== prev.a_flen)
+                output += `a_flen=${point.a_flen}\r\n`
+        }
+        if (point.a !== prev.a)
+            output += `a=${point.a ? point.a : 0}\r\n`
+        if (point.props !== prev.props)
+            output += `props=${point.props}\r\n`
+        prev = { ...point }
         output += 'set tile\r\n'
     })
 

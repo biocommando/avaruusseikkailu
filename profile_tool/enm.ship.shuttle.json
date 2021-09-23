@@ -1,0 +1,35 @@
+[
+    {
+        "type": "enemy",
+        "link_id": "shuttle",
+        "data": {
+            "name": "Shuttle",
+            "type": "ship",
+            "sprite": "config/sprite/ship/shuttle.ini",
+            "health": "100",
+            "weapon": "<weapon.enm_rocket_gun>",
+            "spawn_enemy": "<enemy.Soldier>",
+            "drop_collectable": "<collectable.medium_health>"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_rocket_gun",
+        "data": {
+            "name": "enm_rocket_gun",
+            "sprite": "config/sprite/shot/blink/yellow.ini",
+            "damage": "15",
+            "shots": "3",
+            "random_spread": "10",
+            "spread": "40",
+            "alive_timer": "40",
+            "reload": "30",
+            "speed": "0",
+            "acceleration": "0.5",
+            "affected_by_gravity": "1",
+            "blast_radius": "50",
+            "sound": "7",
+            "sound_key": "80"
+        }
+    }
+]

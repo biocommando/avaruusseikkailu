@@ -18,12 +18,56 @@
             white-space: normal;
         }
 
-        .wall {
+        .props_1 {
             background-color: blue;
         }
 
-        .hazard {
+        .props_2 {
             background-color: red;
+        }
+
+        .props_3,
+        .props_4,
+        .props_5,
+        .props_6,
+        .props_m3,
+        .props_m4,
+        .props_m5,
+        .props_m6 {
+            background-image: url(key.png);
+            background-repeat: no-repeat;
+        }
+
+        .props_3 {
+            background-color: blue;
+        }
+
+        .props_m3 {
+            background-color: lightblue;
+        }
+
+        .props_4 {
+            background-color: green;
+        }
+
+        .props_m4 {
+            background-color: lightgreen;
+        }
+
+        .props_5 {
+            background-color: purple;
+        }
+
+        .props_m5 {
+            background-color: magenta;
+        }
+
+        .props_6 {
+            background-color: darkcyan;
+        }
+
+        .props_m6 {
+            background-color: cyan;
         }
 
         .row {
@@ -56,9 +100,17 @@
     </select>
     Paint type:
     <select id="paintType">
-        <option value="">Background (b)</option>
-        <option value="wall">Wall (w)</option>
-        <option value="hazard">Hazard (h)</option>
+        <option value="props_0">Background (b)</option>
+        <option value="props_1">Wall (w)</option>
+        <option value="props_2">Hazard (h)</option>
+        <option value="props_3">Wall, flippable, type 1</option>
+        <option value="props_4">Wall, flippable, type 2</option>
+        <option value="props_5">Wall, flippable, type 3</option>
+        <option value="props_6">Wall, flippable, type 4</option>
+        <option value="props_m3">Background, flippable, type 1</option>
+        <option value="props_m4">Background, flippable, type 2</option>
+        <option value="props_m5">Background, flippable, type 3</option>
+        <option value="props_m6">Background, flippable, type 4</option>
     </select>
     <br />
     Add object:
@@ -102,7 +154,7 @@
             for (let x = 0; x < w; x++) {
                 if (map[x] === undefined) map[x] = []
                 for (let y = 0; y < h; y++)
-                    if (map[x][y] === undefined) map[x][y] = { type: '', objects: [] }
+                    if (map[x][y] === undefined) map[x][y] = { type: 'props_0', objects: [] }
             }
         }
 
@@ -160,7 +212,7 @@
 
         function clearObjectList() {
             map[cursor.x][cursor.y].objects = []
-            objectList.value=''
+            objectList.value = ''
             renderMap()
         }
 
@@ -247,7 +299,7 @@
                             objectIds: map[x][y].objects.map(o => {
                                 const found = objectTypes.find(ot => ot.name === o)
                                 if (!found) alert(`Unknown object '${o}' at ${x},${y}`)
-                                return found.id
+                                return found
                             })
                         })
                     }

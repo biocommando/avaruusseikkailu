@@ -1,0 +1,53 @@
+[
+    {
+        "type": "enemy",
+        "link_id": "horned",
+        "data": {
+            "name": "Horned",
+            "type": "ship",
+            "sprite": "config/sprite/ship/horned.ini",
+            "health": "200",
+            "weapon": "<weapon.enm_rapid_cluster_gun>",
+            "spawn_enemy": "<enemy.Soldier>",
+            "spawn_enemy_count": 2,
+            "drop_collectable": "<collectable.coins>",
+            "drop_collectable_count": 3
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_rapid_cluster_gun",
+        "data": {
+            "name": "enm_rapid_cluster_gun",
+            "sprite": "config/sprite/shot/cross/red.ini",
+            "damage": "20",
+            "shots": "1",
+            "random_spread": "5",
+            "alive_timer": "30",
+            "reload": "15",
+            "speed": "6",
+            "affected_by_gravity": "1",
+            "blast_radius": "80",
+            "sound": "7",
+            "sound_key": "80",
+            "number_of_child_particles": "1",
+            "child_particle_id": "<weapon.enm_rapid_cluster_gun.cluster>"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_rapid_cluster_gun.cluster",
+        "data": {
+            "name": "enm_rapid_cluster_gun.cluster",
+            "sprite": "config/sprite/shot/shrapnel/red.ini",
+            "damage": "10",
+            "shots": "5",
+            "spread": 360,
+            "random_spread": "0",
+            "alive_timer": "8",
+            "speed": "6",
+            "affected_by_gravity": "1",
+            "blast_radius": "30"
+        }
+    }
+]

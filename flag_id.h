@@ -28,7 +28,12 @@ constexpr int collectable_original_pos_flag = 404;
 constexpr int collectable_float_bounce_amount_flag = 405;
 constexpr int collectable_not_collectable_counter = 406;
 constexpr int collectable_getting_sucked_in_flag = 407;
-constexpr int collectable_buy_value = 408;
+constexpr int collectable_buy_value_flag = 408;
+constexpr int collectable_flip_props_flag = 409;
+constexpr int collectable_hide_sx_flag = 410;
+constexpr int collectable_hide_sy_flag = 411;
+constexpr int collectable_show_sx_flag = 413;
+constexpr int collectable_show_sy_flag = 414;
 
 constexpr int player_coins_flag = 1100;
 

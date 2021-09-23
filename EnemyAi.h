@@ -131,9 +131,9 @@ inline void ship_ai(GameObject &ship, GameObject &player, TileMap &tm)
             if (ship.get_speed_in_direction() < 8)
                 ship.accelerate_in_direction(0.15);
             if (ship.get_counter(ai_patrol_counter) % 20 == 0 ||
-                tm.check_collision(ship.get_x() + dir_x * 32, ship.get_y() + dir_y * 32, ship.get_hitbox_w(), ship.get_hitbox_h()) ||
-                tm.check_collision(ship.get_x() + dir_x * 64, ship.get_y() + dir_y * 64, ship.get_hitbox_w(), ship.get_hitbox_h()) ||
-                tm.check_collision(ship.get_x() + dir_x * 96, ship.get_y() + dir_y * 96, ship.get_hitbox_w(), ship.get_hitbox_h()))
+                tm.check_collision(ship.get_x() + dir_x * 32, ship.get_y() + dir_y * 32, ship.get_hitbox_w(), ship.get_hitbox_h()) > 0 ||
+                tm.check_collision(ship.get_x() + dir_x * 64, ship.get_y() + dir_y * 64, ship.get_hitbox_w(), ship.get_hitbox_h()) > 0 ||
+                tm.check_collision(ship.get_x() + dir_x * 96, ship.get_y() + dir_y * 96, ship.get_hitbox_w(), ship.get_hitbox_h()) > 0)
             {
                 auto direction = patrol_mode;
                 if (ship.get_counter(ai_patrol_counter) == 0)
@@ -203,10 +203,10 @@ inline void soldier_ai(GameObject &soldier, GameObject &player, TileMap &tm)
         }
     }
 
-    if (!tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y() + 1, soldier.get_hitbox_w(), soldier.get_hitbox_h()) ||
-        tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y(), soldier.get_hitbox_w(), soldier.get_hitbox_h()))
+    if (tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y() + 1, soldier.get_hitbox_w(), soldier.get_hitbox_h()) <= 0 ||
+        tm.check_collision(soldier.get_x() + soldier.get_dx() * 2, soldier.get_y(), soldier.get_hitbox_w(), soldier.get_hitbox_h()) > 0)
     {
-        while (tm.check_collision(soldier.get_x(), soldier.get_y(), soldier.get_hitbox_w(), soldier.get_hitbox_h()))
+        while (tm.check_collision(soldier.get_x(), soldier.get_y(), soldier.get_hitbox_w(), soldier.get_hitbox_h()) > 0)
             soldier.set_position(soldier.get_x(), soldier.get_y() - 1);
         soldier.set_speed(-soldier.get_dx(), soldier.get_dy());
         soldier.set_flag(ai_preferred_direction_flag, dir == 'R' ? 'L' : 'R');

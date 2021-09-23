@@ -11,7 +11,10 @@ const hash = data => {
 ids = {}
 
 function getLinkCode(obj) {
-    return '<' + obj.type + '.' + obj.data.name + '>'
+    let name = obj.link_id
+    if (!name)
+        name = obj.data.name
+    return '<' + obj.type + '.' + name + '>'
 }
 
 function addId(key, origKey) {

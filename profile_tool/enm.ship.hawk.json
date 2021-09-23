@@ -1,0 +1,54 @@
+[
+    {
+        "type": "enemy",
+        "link_id": "hawk",
+        "data": {
+            "name": "Hawk",
+            "type": "ship",
+            "sprite": "config/sprite/ship/hawk.ini",
+            "health": "100",
+            "weapon": "<weapon.enm_cluster_gun>",
+            "spawn_enemy": "<enemy.round>",
+            "spawn_enemy_count": "4",
+            "drop_collectable": "<collectable.coins>",
+            "drop_collectable_count": "5",
+            "drop_collectable_is_random": "80"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_cluster_gun",
+        "data": {
+            "name": "enm_cluster_gun",
+            "sprite": "config/sprite/shot/cross/yellow.ini",
+            "damage": "15",
+            "shots": "1",
+            "random_spread": "5",
+            "alive_timer": "50",
+            "reload": "45",
+            "speed": "10",
+            "affected_by_gravity": "1",
+            "blast_radius": "40",
+            "sound": "7",
+            "sound_key": "80",
+            "number_of_child_particles": "1",
+            "child_particle_id": "<weapon.enm_cluster_gun.cluster>"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_cluster_gun.cluster",
+        "data": {
+            "name": "enm_cluster_gun.cluster",
+            "sprite": "config/sprite/shot/shrapnel/yellow.ini",
+            "damage": "30",
+            "shots": "8",
+            "spread": 360,
+            "random_spread": "0",
+            "alive_timer": "12",
+            "speed": "3",
+            "affected_by_gravity": "1",
+            "blast_radius": "30"
+        }
+    }
+]

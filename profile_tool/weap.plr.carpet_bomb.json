@@ -1,20 +1,21 @@
 [
     {
         "type": "weapon",
+        "link_id": "Carpet bomb",
         "data": {
-            "name": "Carpet bomb",
+            "name": "Cluster launcher",
             "damage": "40",
-            "shots": "1",
+            "shots": "3",
             "random_spread": "20",
             "spread": "0",
             "alive_timer": "60",
             "alive_timer_variation": "3",
             "sprite": "config/sprite/shot/blink/red.ini",
-            "reload": "3",
+            "reload": "30",
             "speed": "2",
             "affected_by_gravity": "1",
             "number_of_child_particles": "1",
-            "child_particle_id": "<weapon.Carpet bomb child>",
+            "child_particle_id": "<weapon.mega_bomb_cluster>",
             "angle": "180",
             "bouncy": "0",
             "blast_radius": "64",
@@ -24,10 +25,10 @@
     },
     {
         "type": "weapon",
+        "link_id": "mega_bomb_cluster",
         "data": {
-            "name": "Carpet bomb child",
             "damage": "10",
-            "shots": "6",
+            "shots": "12",
             "random_spread": "0",
             "spread": "360",
             "alive_timer": "20",

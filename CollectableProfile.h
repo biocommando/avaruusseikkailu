@@ -10,6 +10,7 @@ enum CollectableType
     Collectable_ARMOR,
     Collectable_COIN,
     Collectable_MISSION_ITEM,
+    Collectable_MODIFY_MAP,
 };
 
 class CollectableProfile
@@ -24,6 +25,13 @@ public:
     int cost = -1;
     int buy_allow_flags = 0xFF;
     int buy_menu_order;
+
+    int flip_props = 0;
+    int hidden_sprite_x = -1;
+    int hidden_sprite_y = -1;
+    int shown_sprite_x = -1;
+    int shown_sprite_y = -1;
+
     std::string name;
 
     CollectableProfile()
@@ -60,6 +68,8 @@ public:
                                   m[id].type = Collectable_COIN;
                               else if (val == "mission")
                                   m[id].type = Collectable_MISSION_ITEM;
+                              else if (val == "modify_map")
+                                  m[id].type = Collectable_MODIFY_MAP;
                           }
                           if (key == "id")
                           {
@@ -79,6 +89,16 @@ public:
                               m[id].cost = std::stoi(val);
                           if (key == "buy_allow_flags")
                               m[id].buy_allow_flags = std::stoi(val);
+                          if (key == "flip_props")
+                              m[id].flip_props = std::stoi(val);
+                          if (key == "hidden_sx")
+                              m[id].hidden_sprite_x = std::stoi(val);
+                          if (key == "hidden_sy")
+                              m[id].hidden_sprite_y = std::stoi(val);
+                          if (key == "shown_sx")
+                              m[id].shown_sprite_x = std::stoi(val);
+                          if (key == "shown_sy")
+                              m[id].shown_sprite_y = std::stoi(val);
                       },
                       [](const auto &s) {});
         cf.read_config_file(file);
