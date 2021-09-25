@@ -4,6 +4,11 @@
     <style>
         body {
             background-color: darkslategray;
+            color: yellow;
+        }
+
+        a {
+            color: white;
         }
 
         .cell {
@@ -127,9 +132,13 @@
     <button onclick="copyObjectList(true)">Cut (x)</button>
     <button onclick="pasteObjectList()">Paste (v)</button>
     <hr />
+    <div id="projectList"></div>
+    <input id="projectName">
     <button onclick="load()">Load project</button>
     <button onclick="save()">Save project</button>
+    <input id="exportName" value="map1.json">
     <button onclick="exportIni()">Export ini file</button>
+    <span id="saveStatus"></span>
     <script>
         let w, h
         let cursor = { x: 0, y: 0 }
@@ -237,77 +246,79 @@
             objectSelect.value = 'none'
         }
 
+        function displaySavedIndicator(text) {
+            saveStatus.innerHTML = text
+            displaySavedIndicator.timeout && clearTimeout(displaySavedIndicator.timeout)
+            displaySavedIndicator.timeout = setTimeout(() => {
+                saveStatus.innerHTML = ''
+            }, 1000);
+        }
+
         let filename = 'map1.json'
 
         function load() {
-            const file = prompt('file name?', filename)
-            if (file) {
-                filename = file
-                fetch('/map-projects/' + file)
-                    .then(x => x.json())
-                    .then(loaded => {
-                        w = loaded.w
-                        h = loaded.h
+            filename = projectName.value
+            fetch('/map-projects/' + filename)
+                .then(x => x.json())
+                .then(loaded => {
+                    w = loaded.w
+                    h = loaded.h
 
-                        for (let x = 0; x < w; x++) {
-                            for (let y = 0; y < h; y++) {
-                                loaded.map[x][y].objects = loaded.map[x][y].objects.map(o => {
-                                    const found = objectTypes.find(ot => ot.id === o)
-                                    if (found) return found.name
-                                    return 'UNKNOWN_id=' + o
-                                })
-                            }
+                    for (let x = 0; x < w; x++) {
+                        for (let y = 0; y < h; y++) {
+                            loaded.map[x][y].objects = loaded.map[x][y].objects.map(o => {
+                                const found = objectTypes.find(ot => ot.id === o)
+                                if (found) return found.name
+                                return 'UNKNOWN_id=' + o
+                            })
                         }
-                        map = loaded.map
-                        spriteSheet = loaded.spriteSheet
-                        renderMap()
-                    })
-            }
+                    }
+                    map = loaded.map
+                    spriteSheet = loaded.spriteSheet
+                    exportName.value = loaded.exportFilename
+                    renderMap()
+                })
         }
 
         function save() {
-            const file = prompt('file name?', filename)
-            if (file) {
-                filename = file
-                const mapcpy = []
-                for (let x = 0; x < w; x++) {
-                    mapcpy[x] = []
-                    for (let y = 0; y < h; y++) {
-                        mapcpy[x][y] = { ...map[x][y] }
-                        mapcpy[x][y].objects = mapcpy[x][y].objects.map(o => {
-                            const found = objectTypes.find(ot => ot.name === o)
-                            if (found) return found.id
-                            const alt = o.split('=')[1]
-                            if (alt) return alt
-                            return 99999
-                        })
-                    }
+            filename = projectName.value
+            const mapcpy = []
+            for (let x = 0; x < w; x++) {
+                mapcpy[x] = []
+                for (let y = 0; y < h; y++) {
+                    mapcpy[x][y] = { ...map[x][y] }
+                    mapcpy[x][y].objects = mapcpy[x][y].objects.map(o => {
+                        const found = objectTypes.find(ot => ot.name === o)
+                        if (found) return found.id
+                        const alt = o.split('=')[1]
+                        if (alt) return alt
+                        return 99999
+                    })
                 }
-
-                fetch('/api/save/' + file, { method: 'POST', body: JSON.stringify({ w, h, map: mapcpy, spriteSheet }) })
             }
+
+            fetch('/api/save/' + filename, { method: 'POST', body: JSON.stringify({ w, h, map: mapcpy, spriteSheet, exportFilename: exportName.value }) })
+                .then(() => updateProjectList())
+                .then(() => displaySavedIndicator('Saved to ' + filename))
         }
 
         function exportIni() {
-            const file = prompt('file name?', filename)
-            if (file) {
-                const flatMap = []
-                for (let x = 0; x < w; x++) {
-                    for (let y = 0; y < h; y++) {
-                        flatMap.push({
-                            x, y, type: map[x][y].type,
-                            objectIds: map[x][y].objects.map(o => {
-                                const found = objectTypes.find(ot => ot.name === o)
-                                if (!found) alert(`Unknown object '${o}' at ${x},${y}`)
-                                return found
-                            })
+            const flatMap = []
+            for (let x = 0; x < w; x++) {
+                for (let y = 0; y < h; y++) {
+                    flatMap.push({
+                        x, y, type: map[x][y].type,
+                        objectIds: map[x][y].objects.map(o => {
+                            const found = objectTypes.find(ot => ot.name === o)
+                            if (!found) alert(`Unknown object '${o}' at ${x},${y}`)
+                            return found
                         })
-                    }
+                    })
                 }
-                //filename = file
-                fetch('/api/export/' + file + '.ini',
-                    { method: 'POST', body: JSON.stringify({ data: flatMap, spriteSheet }) })
             }
+            fetch('/api/export/' + exportName.value + '.ini',
+                { method: 'POST', body: JSON.stringify({ data: flatMap, spriteSheet }) })
+                .then(() => displaySavedIndicator('Exported to ' + exportName.value + '.ini'))
         }
 
         function handleKeyPress(code) {
@@ -348,14 +359,28 @@
             } else if (code == 'KeyF') {
                 clickType.value = 'fill'
             } else if (code == 'KeyB') {
-                paintType.value = ''
+                paintType.value = 'props_0'
             } else if (code == 'KeyW') {
-                paintType.value = 'wall'
+                paintType.value = 'props_1'
             } else if (code == 'Space') {
                 cellClick(cursor.x, cursor.y)
             }
             return true
         }
+
+        function updateProjectList() {
+            fetch('/api/list-proj')
+                .then(x => x.json())
+                .then(lst => {
+                    let html = 'Projects:<hr/>'
+                    lst.forEach(x => {
+                        html += `<a href="javascript:void(0)" onclick="projectName.value='${x}'">${x}</a><br/>`
+                    })
+                    projectList.innerHTML = html
+                })
+        }
+
+        updateProjectList()
 
         setDimensions(30, 30)
         renderMap()

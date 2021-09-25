@@ -423,8 +423,6 @@ public:
                              fabs(collectable->get_y() - collectable->get_flag(collectable_orig_y_flag)) > 64)
                     {
                         collectable->set_flag(collectable_getting_sucked_in_flag, 2);
-                        //collectable->set_position(collectable->get_flag(collectable_orig_x_flag), collectable->get_flag(collectable_orig_y_flag));
-                        //collectable->set_flag(collectable_original_pos_flag, collectable->get_y() + 10);
                     }
                     else if (player->get_distance_sqr(*collectable) < 64 * 64)
                     {
@@ -443,6 +441,8 @@ public:
                 else if (not_collectable_cntr == 1)
                 {
                     collectable->set_speed(0, 0);
+                    collectable->set_flag(collectable_orig_x_flag, collectable->get_x());
+                    collectable->set_flag(collectable_orig_y_flag, collectable->get_y());
                 }
             }
 
@@ -492,7 +492,7 @@ public:
         al_translate_transform(&transform, (int)-camera_offset_x, (int)-camera_offset_y);
         al_use_transform(&transform);
 
-        //al_clear_to_color(al_map_rgb_f(0, 0, 0));
+        al_clear_to_color(al_map_rgb_f(0, 0, 0));
 
         tile_map.draw();
         if (game_paused)
@@ -585,7 +585,7 @@ public:
                 inventory_cursor_max = i - 1;
                 if (inventory_cursor > inventory_cursor_max)
                     inventory_cursor = inventory_cursor_max;
-                text_drawer.draw_text(x_center, y0 + h - 10, "up/down/left/right = select item / category, enter = buy");
+                text_drawer.draw_text(x_center, y0 + h - 10, "left/right = page, up/down = select, enter = buy");
             }
         }
 
@@ -790,7 +790,14 @@ public:
                                                                                     if (t->check_point_inside(enemy->get_x(), enemy->get_y()))
                                                                                     {
                                                                                         enemy->set_health(-1);
+                                                                                        // No point in spawning enemies or collectables inside the wall
+                                                                                        enemy->set_flag(enemy_spawn_enemy_id_flag, 0);
+                                                                                        enemy->set_flag(enemy_drop_collectable_id_flag, 0);
                                                                                     }
+                                                                                }
+                                                                                if (t->check_point_inside(this->player->get_x(), this->player->get_y()))
+                                                                                {
+                                                                                    player->set_health(-1);
                                                                                 }
                                                                             }
 
@@ -882,6 +889,9 @@ public:
         {
             if (inventory_counter == 0)
             {
+                const auto orig_curs = inventory_cursor;
+                const auto orig_cat = inventory_category;
+                const auto orig_show_status = inventory_show_status;
                 if (key_status[key_config.up] && inventory_cursor > 1)
                 {
                     inventory_cursor--;
@@ -915,6 +925,11 @@ public:
                     inventory_cursor = 1;
                     inventory_category = (CollectableType)((int)inventory_category + 1);
                     inventory_counter = 5;
+                }
+
+                if (orig_curs != inventory_cursor || orig_cat != inventory_category || orig_show_status != inventory_show_status)
+                {
+                    midi_tracker.trigger_sfx(60, sfx_select, 100);
                 }
             }
         }
@@ -982,7 +997,7 @@ public:
             midi_tracker.kill_all_sfx();
             midi_tracker.trigger_sfx(60, sfx_select, 100);
             show_inventory = !show_inventory;
-            inventory_counter = 30;
+            inventory_counter = 10;
         }
         if (show_inventory)
         {

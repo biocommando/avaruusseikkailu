@@ -23,7 +23,7 @@
             "sprite": "config/sprite/shot/small/red.ini",
             "damage": "7",
             "shots": "1",
-            "random_spread": "0",
+            "random_spread": "7",
             "alive_timer": "50",
             "reload": "4",
             "speed": "17",

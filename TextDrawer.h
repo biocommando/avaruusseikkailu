@@ -12,7 +12,6 @@ struct TimedPermanentText
     int flags;
     float x;
     float y;
-    float fade_delta;
     bool use_camera_offset;
 };
 
@@ -47,7 +46,7 @@ public:
 
     void add_timed_permanent_text(float x, float y, const std::string &text, int time = 30)
     {
-        TimedPermanentText t{time, color, text, flags, x, y, 1.0f / time, use_camera_offset};
+        TimedPermanentText t{time, color, text, flags, x, y, use_camera_offset};
         timed_texts.push_back(t);
     }
 
@@ -67,16 +66,11 @@ public:
 
             al_draw_text(font, t->color, x, y, t->flags, t->text.c_str());
 
-            t->color.r -= t->fade_delta;
-            if (t->color.r < 0)
-                t->color.r = 0;
-            t->color.g -= t->fade_delta;
-            if (t->color.g < 0)
-                t->color.g = 0;
-            t->color.b -= t->fade_delta;
-            if (t->color.b < 0)
-                t->color.b = 0;
             t->time--;
+            if (t->time == t->text.size() && t->time >= 2)
+            {
+                t->text = t->text.substr(1, t->time - 2);
+            }
             if (t->time <= 0)
             {
                 timed_texts.erase(timed_texts.begin() + i);

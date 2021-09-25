@@ -27,5 +27,34 @@
             "sound": "7",
             "sound_key": "80"
         }
+    },
+    {
+        "type": "enemy",
+        "link_id": "round_easier",
+        "data": {
+            "name": "Round easier",
+            "type": "ship",
+            "sprite": "config/sprite/ship/round.ini",
+            "health": "40",
+            "weapon": "<weapon.enm_pulse_gun>"
+        }
+    },
+    {
+        "type": "weapon",
+        "link_id": "enm_pulse_gun",
+        "data": {
+            "name": "enm_pulse_gun",
+            "sprite": "config/sprite/shot/small/cyan.ini",
+            "damage": "7",
+            "shots": "1",
+            "random_spread": "3",
+            "alive_timer": "20",
+            "reload": "10",
+            "speed": "20",
+            "affected_by_gravity": "1",
+            "blast_radius": "4",
+            "sound": "7",
+            "sound_key": "80"
+        }
     }
 ]

@@ -53,6 +53,10 @@ http.createServer((req, res) => {
                     res.end('ok')
                 })
                 return
+            } else if (cmd === 'list-proj') {
+                res.writeHead(200, { 'Content-Type': 'application/json' })
+                res.end(JSON.stringify(fs.readdirSync('map-projects').filter(x => x.endsWith('.json'))))
+                return
             }
         }
         if (url === '/') url = '/mapedit.html'
