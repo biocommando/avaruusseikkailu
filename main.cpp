@@ -11,9 +11,9 @@ void calc_camera_offset_correction(float plr_pos, float *camera_offset, float sc
     // camera correction not needed if whole level fits on screen at once
     if (level_size <= screen_size)
         return;
-    auto target = plr_pos - screen_size / 2;
-    
-    auto offset_correction = target - *camera_offset;
+    const auto target = plr_pos - screen_size / 2;
+
+    const auto offset_correction = target - *camera_offset;
 
     *camera_offset = (int)(*camera_offset + offset_correction);
 
@@ -25,13 +25,13 @@ void calc_camera_offset_correction(float plr_pos, float *camera_offset, float sc
 
 int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
 {
-    
+
     auto world = new World();
 
     world->mission_config = mission_config;
 
     world->init_game();
-    
+
     std::map<int, bool> key_status;
     float target_camera_y = camera_offset_y;
     float target_camera_x = camera_offset_x;
@@ -44,9 +44,10 @@ int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
 
         if (event.type == ALLEGRO_EVENT_AUDIO_STREAM_FRAGMENT)
         {
-            auto stream = (ALLEGRO_AUDIO_STREAM *) event.any.source;
-            float *buf = (float*)al_get_audio_stream_fragment(stream);
-            if (buf) {
+            auto stream = (ALLEGRO_AUDIO_STREAM *)event.any.source;
+            float *buf = (float *)al_get_audio_stream_fragment(stream);
+            if (buf)
+            {
                 world->midi_tracker.process_buffer(buf, 1024);
                 al_set_audio_stream_fragment(stream, buf);
             }
@@ -56,6 +57,12 @@ int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
         {
             if (redraw_count == 0)
             {
+                if (world->player)
+                {
+                    world->handle_keys(key_status);
+                    calc_camera_offset_correction(world->player->get_y(), &camera_offset_y, screen_h, world->tile_map.get_h());
+                    calc_camera_offset_correction(world->player->get_x(), &camera_offset_x, screen_w, world->tile_map.get_w());
+                }
                 world->progress_and_draw();
                 redraw_count++;
             }
@@ -78,13 +85,6 @@ int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
         if (event.type == ALLEGRO_EVENT_KEY_UP)
         {
             key_status[event.keyboard.keycode] = false;
-        }
-        if (world->player)
-        {
-            world->handle_keys(key_status);
-
-            calc_camera_offset_correction(world->player->get_y(), &camera_offset_y, screen_h, world->tile_map.get_h());
-            calc_camera_offset_correction(world->player->get_x(), &camera_offset_x, screen_w, world->tile_map.get_w());
         }
         if (world->goal_status == -1)
         {

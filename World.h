@@ -443,7 +443,7 @@ public:
 
         ALLEGRO_TRANSFORM transform;
         al_identity_transform(&transform);
-        al_translate_transform(&transform, -camera_offset_x, -camera_offset_y);
+        al_translate_transform(&transform, (int)-camera_offset_x, (int)-camera_offset_y);
         al_use_transform(&transform);
 
         //al_clear_to_color(al_map_rgb_f(0, 0, 0));
@@ -821,12 +821,12 @@ public:
         {
             if (key_status[key_config.left])
             {
-                player->increment_direction_angle(-ALLEGRO_PI / 48);
+                player->increment_direction_angle(-ALLEGRO_PI / 24);
                 player->set_animation(1);
             }
             else if (key_status[key_config.right])
             {
-                player->increment_direction_angle(ALLEGRO_PI / 48);
+                player->increment_direction_angle(ALLEGRO_PI / 24);
                 player->set_animation(1);
             }
             else

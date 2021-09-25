@@ -242,6 +242,17 @@ public:
             dy = -1 - flags[collectable_float_bounce_amount_flag] / 10.0f;
         }
 
+        if (!is_shot && !is_collectable && acceleration > 0.1)
+        {
+            const auto ddx = sin(direction_angle + ALLEGRO_PI);
+            const auto ddy = -cos(direction_angle + ALLEGRO_PI);
+            auto &fx = vfx_tool->add(x + ddx * sprite.get_w() / 2,
+                                     y + ddy * sprite.get_h() / 2,
+                                     6, .42, .89, 1, randomint(15, 20));
+            VisualFxTool::disappear(fx);
+            VisualFxTool::fade_to_color(fx, 0, 0, 0);
+        }
+
         if (acceleration > 1e-3)
         {
             add_speed_in_direction(acceleration);
@@ -347,16 +358,6 @@ public:
                 const auto col = al_map_rgb_f((5 - i) / 5.0f, i / 5.0f, 0);
                 const auto x0 = x - 15 + i * 5 - camera_offset_x;
                 al_draw_filled_rectangle(x0, sprite_top - 8, x0 + 3, sprite_top - 3, col);
-            }
-            if (acceleration > 0.1)
-            {
-                const auto ddx = sin(direction_angle + ALLEGRO_PI);
-                const auto ddy = -cos(direction_angle + ALLEGRO_PI);
-                auto &fx = vfx_tool->add(x + ddx * sprite.get_w() / 2,
-                                         y + ddy * sprite.get_h() / 2,
-                                         6, .42, .89, 1, randomint(15, 20));
-                VisualFxTool::disappear(fx);
-                VisualFxTool::fade_to_color(fx, 0, 0, 0);
             }
         }
         else if (is_shot)
