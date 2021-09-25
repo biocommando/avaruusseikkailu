@@ -189,7 +189,7 @@ function createTilemap(map, tileFile, outputFileName) {
                 x: point.x, y: point.y, sx: 5, sy: 6, description: 'hazard',
                 a: 1, a_flen: 10, a_fnum: 3, props: point.props
             })
-        } else if ((point.props > 2 && point.props < 10) || (point.props < -2 && point.props > -10)) {
+        } else if ((point.props > 2 && point.props < 100) || (point.props < -2 && point.props > -100)) {
             result.push({
                 x: point.x, y: point.y, sx: 5 + (point.props > 0 ? 0 : 1), sy: 7, description: 'flippable',
                 props: point.props

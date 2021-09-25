@@ -13,6 +13,21 @@ enum CollectableType
     Collectable_MODIFY_MAP,
 };
 
+static inline std::string collectable_type_to_string(const CollectableType t)
+{
+    switch(t)
+    {
+        case Collectable_AMMO: return "Ammo";
+        case Collectable_WEAPON: return "Weapon";
+        case Collectable_HEALTH: return "Health";
+        case Collectable_ARMOR: return "Armor";
+        case Collectable_COIN: return "Coins";
+        case Collectable_MISSION_ITEM: return "Mission item";
+        case Collectable_MODIFY_MAP: return "Key";
+        default: return "";
+    }
+}
+
 class CollectableProfile
 {
 public:
@@ -31,6 +46,7 @@ public:
     int hidden_sprite_y = -1;
     int shown_sprite_x = -1;
     int shown_sprite_y = -1;
+    int id;
 
     std::string name;
 
@@ -74,6 +90,7 @@ public:
                           if (key == "id")
                           {
                               id = std::stoi(val);
+                              m[id].id = id;
                               m[id].buy_menu_order = order;
                               order++;
                           }

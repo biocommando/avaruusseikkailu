@@ -47,8 +47,10 @@ class World
     std::vector<int> collectable_profiles_in_buy_order;
     bool show_inventory = false;
     int inventory_cursor = 1;
+    CollectableType inventory_category = Collectable_AMMO;
     int inventory_cursor_max = 9;
     int inventory_counter = 0;
+    bool inventory_show_status = true;
 
     // Lower priority = more important
     std::map<int, float> target_priorities = {
@@ -173,6 +175,22 @@ public:
             shot.set_flag(damage_flag, wp.damage);
             angle += angle_inc;
         }
+    }
+
+    CollectableProfile *get_buy_menu_item(int cursor, CollectableType category)
+    {
+        for (auto &collectable_id : collectable_profiles_in_buy_order)
+        {
+            auto &c = collectable_profiles[collectable_id];
+            if (!check_buyable(c) || c.type != category)
+                continue;
+            cursor--;
+            if (cursor == 0)
+            {
+                return &c;
+            }
+        }
+        return nullptr;
     }
 
     GameObject *spawn_collectable(int x, int y, int type, bool initial_setup = false)
@@ -480,42 +498,67 @@ public:
             al_draw_filled_rectangle(x0, y0, x0 + w, y0 + h,
                                      al_map_rgb_f(0.1, 0.1, 0.1));
             int y = y0 + 15;
-            text_drawer.draw_text(x_center, y, "B L A C K  M A R K E T");
+            text_drawer.draw_text(x_center, y, "INVENTORY");
             y += 15;
-            text_drawer.draw_text(x_center, y, "Coins: " + std::to_string(player->get_flag(player_coins_flag)));
-            int i = 0;
-            for (auto &collectable_id : collectable_profiles_in_buy_order)
+            if (inventory_show_status)
             {
-                const auto &c = collectable_profiles[collectable_id];
-                if (!check_buyable(c))
-                    continue;
-                i++;
+                text_drawer.draw_text(x_center, y, "Health: " + std::to_string((int)player->get_health()) + '%');
                 y += 15;
-                if (inventory_cursor == i)
-                    al_draw_filled_rectangle(x0 + 15, y - 2, x0 + w - 15, y + 10, al_map_rgb_f(0.5, 0.1, 0.1));
-                if (c.type == Collectable_WEAPON)
-                    text_drawer.draw_text(x_center, y, "Weapon: " + weapon_profiles[c.weapon_id].name + " [" + std::to_string(c.cost) + "]");
-                else if (c.type == Collectable_AMMO)
+                text_drawer.draw_text(x_center, y, "Armor: " + std::to_string((int)(100.0f / player->get_armor())) + '%');
+                y += 15;
+                text_drawer.draw_text(x_center, y, "Coins: " + std::to_string(player->get_flag(player_coins_flag)));
+                y += 15;
+                text_drawer.draw_text(x_center, y, "Weapons / ammo:");
+                y += 15;
+                for (const auto &entry : player_weapon_status)
                 {
-                    std::stringstream ss;
-                    ss << "Ammo: " << weapon_profiles[c.weapon_id].name << " +" << (int)c.bonus_amount << " [" << c.cost << "], current: " << get_player_ammo(c.weapon_id);
-                    text_drawer.draw_text(x_center, y, ss.str());
+                    if (entry.second.owned)
+                    {
+                        text_drawer.draw_text(x_center, y, weapon_profiles[entry.first].name + " / " + std::to_string(entry.second.ammo));
+                        y += 15;
+                    }
                 }
-                else if (c.type == Collectable_HEALTH)
-                    text_drawer.draw_text(x_center, y, "Health: +" + std::to_string((int)c.bonus_amount) + " [" + std::to_string(c.cost) + "]");
-                else if (c.type == Collectable_ARMOR)
-                {
-                    std::stringstream ss;
-                    ss << "Armor: " << (int)c.bonus_amount << "% [" << c.cost << "], current: " << (int)(100.0f / player->get_armor()) << '%';
-                    text_drawer.draw_text(x_center, y, ss.str());
-                }
-                else
-                    text_drawer.draw_text(x_center, y, "Dick in a box [priceless]"); // Misconfiguration
+                text_drawer.draw_text(x_center, y0 + h - 10, "right = go to buy menu");
             }
-            inventory_cursor_max = i;
-            if (inventory_cursor > inventory_cursor_max)
-                inventory_cursor = inventory_cursor_max;
-            text_drawer.draw_text(x_center, y0 + h - 10, "up/down = select, enter = buy weapon / ammo");
+            else
+            {
+                text_drawer.draw_text(x_center, y, "Coins: " + std::to_string(player->get_flag(player_coins_flag)));
+                y += 15;
+                text_drawer.draw_text(x_center, y,
+                                      (inventory_category > Collectable_AMMO ? collectable_type_to_string((CollectableType)((int)inventory_category - 1)) + " <- " : "Status <- ") +
+                                          collectable_type_to_string(inventory_category) +
+                                          (inventory_category < Collectable_ARMOR ? " -> " + collectable_type_to_string((CollectableType)((int)inventory_category + 1)) : ""));
+                int i = 1;
+                for (auto c = get_buy_menu_item(i, inventory_category); c != nullptr; c = get_buy_menu_item(i, inventory_category))
+                {
+                    y += 15;
+                    if (inventory_cursor == i)
+                        al_draw_filled_rectangle(x0 + 15, y - 2, x0 + w - 15, y + 10, al_map_rgb_f(0.5, 0.1, 0.1));
+                    if (c->type == Collectable_WEAPON)
+                        text_drawer.draw_text(x_center, y, weapon_profiles[c->weapon_id].name + " [" + std::to_string(c->cost) + "]");
+                    else if (c->type == Collectable_AMMO)
+                    {
+                        std::stringstream ss;
+                        ss << weapon_profiles[c->weapon_id].name << " +" << (int)c->bonus_amount << " [" << c->cost << "], current: " << get_player_ammo(c->weapon_id);
+                        text_drawer.draw_text(x_center, y, ss.str());
+                    }
+                    else if (c->type == Collectable_HEALTH)
+                        text_drawer.draw_text(x_center, y, "+" + std::to_string((int)c->bonus_amount) + " [" + std::to_string(c->cost) + "]");
+                    else if (c->type == Collectable_ARMOR)
+                    {
+                        std::stringstream ss;
+                        ss << (int)c->bonus_amount << "% [" << c->cost << "], current: " << (int)(100.0f / player->get_armor()) << '%';
+                        text_drawer.draw_text(x_center, y, ss.str());
+                    }
+                    else
+                        text_drawer.draw_text(x_center, y, "Dick in a box [priceless]"); // Misconfiguration
+                    i++;
+                }
+                inventory_cursor_max = i - 1;
+                if (inventory_cursor > inventory_cursor_max)
+                    inventory_cursor = inventory_cursor_max;
+                text_drawer.draw_text(x_center, y0 + h - 10, "up/down/left/right = select item / category, enter = buy");
+            }
         }
 
         if (goal_status <= 0)
@@ -696,7 +739,7 @@ public:
                                         }
                                         else if (type == Collectable_MODIFY_MAP)
                                         {
-                                            msg = "";
+                                            msg = "Key found, map modified";
                                             const auto props = obj->get_flag(collectable_flip_props_flag);
                                             const auto temporary = 9999999;
 
@@ -710,7 +753,7 @@ public:
                                             auto sx = obj->get_flag(collectable_show_sx_flag);
                                             auto sy = obj->get_flag(collectable_show_sy_flag);
                                             tile_map.modify_map_props(-props, props, [this, &sx, &sy](Tile &t)
-                                                                      { 
+                                                                      {
                                                                           t.get_sprite()->set_s_xy(sx, sy);
                                                                           for (auto enemy : this->game_object_holder.get_category(GameObjectType_ENEMY))
                                                                           {
@@ -719,7 +762,7 @@ public:
                                                                                   enemy->set_health(-1);
                                                                               }
                                                                           }
-                                                                    });
+                                                                      });
                                             sx = obj->get_flag(collectable_hide_sx_flag);
                                             sy = obj->get_flag(collectable_hide_sy_flag);
                                             tile_map.modify_map_props(temporary, -props, [&sx, &sy](Tile &t)
@@ -794,7 +837,7 @@ public:
                 if ((dir_x > 0 && eq < auto_aim_target->get_y()) ||
                     (dir_x < 0 && eq > auto_aim_target->get_y()))
                     dir = 'R';
-                player->increment_direction_angle((dir == 'L' ? -1 : 1) * ALLEGRO_PI / 48);
+                player->increment_direction_angle((dir == 'L' ? -1 : 1) * ALLEGRO_PI / 24);
             }
         }
         else
@@ -808,12 +851,36 @@ public:
                 if (key_status[key_config.up] && inventory_cursor > 1)
                 {
                     inventory_cursor--;
-                    inventory_counter = 20;
+                    inventory_counter = 5;
                 }
                 else if (key_status[key_config.down] && inventory_cursor < inventory_cursor_max)
                 {
                     inventory_cursor++;
-                    inventory_counter = 20;
+                    inventory_counter = 5;
+                }
+                else if (key_status[key_config.left])
+                {
+                    if (inventory_category > Collectable_AMMO)
+                    {
+                        inventory_cursor = 1;
+                        inventory_category = (CollectableType)((int)inventory_category - 1);
+                    }
+                    else
+                        inventory_show_status = true;
+                    inventory_counter = 5;
+                }
+                else if (key_status[key_config.right] && inventory_show_status)
+                {
+                    inventory_cursor = 1;
+                    inventory_category = Collectable_AMMO;
+                    inventory_show_status = false;
+                    inventory_counter = 5;
+                }
+                else if (key_status[key_config.right] && inventory_category < Collectable_ARMOR)
+                {
+                    inventory_cursor = 1;
+                    inventory_category = (CollectableType)((int)inventory_category + 1);
+                    inventory_counter = 5;
                 }
             }
         }
@@ -888,30 +955,23 @@ public:
             if (key_status[ALLEGRO_KEY_ENTER] && inventory_counter == 0)
             {
                 int i = 0;
-                for (auto &collectable_id : collectable_profiles_in_buy_order)
+                const auto c = get_buy_menu_item(inventory_cursor, inventory_category);
+                if (c != nullptr)
                 {
-                    const auto &c = collectable_profiles[collectable_id];
-                    if (!check_buyable(c))
-                        continue;
-                    i++;
-                    if (i == inventory_cursor)
+                    auto coins = player->get_flag(player_coins_flag);
+                    if (coins >= c->cost)
                     {
-                        auto coins = player->get_flag(player_coins_flag);
-                        if (coins >= c.cost)
-                        {
-                            midi_tracker.trigger_sfx(72, sfx_select, 120);
-                            const auto new_collectable = spawn_collectable(player->get_x(), player->get_y(), collectable_id);
-                            new_collectable->set_speed(random(-1, 1), random(-1, 1));
-                            for (int i = 0; i < 60; i++)
-                                new_collectable->progress();
-                            new_collectable->set_counter(collectable_not_collectable_counter, 30);
-                            new_collectable->set_flag(collectable_buy_value_flag, c.cost);
-                            coins -= c.cost;
-                            inventory_counter = 30;
-                        }
-                        player->set_flag(player_coins_flag, coins);
-                        break;
+                        midi_tracker.trigger_sfx(72, sfx_select, 120);
+                        const auto new_collectable = spawn_collectable(player->get_x(), player->get_y(), c->id);
+                        new_collectable->set_speed(random(-1, 1), random(-1, 1));
+                        for (int i = 0; i < 60; i++)
+                            new_collectable->progress();
+                        new_collectable->set_counter(collectable_not_collectable_counter, 30);
+                        new_collectable->set_flag(collectable_buy_value_flag, c->cost);
+                        coins -= c->cost;
+                        inventory_counter = 10;
                     }
+                    player->set_flag(player_coins_flag, coins);
                 }
             }
         }
