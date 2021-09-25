@@ -238,20 +238,15 @@ public:
         return 0;
     }
 
-    void modify_map_props(int props_from, int props_to, std::function<void(Tile &t)> onModify)
+    void modify_map(std::function<void(TileBase *t, bool is_logical_tile)> onModify)
     {
         for (auto &t : logical_tiles)
         {
-            if (t.get_properties() == props_from)
-                t.set_properties(props_to);
+            onModify(&t, true);
         }
         for (auto &t : tiles)
         {
-            if (t.get_properties() == props_from)
-            {
-                onModify(t);
-                t.set_properties(props_to);
-            }
+            onModify(&t, false);
         }
     }
 

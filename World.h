@@ -211,6 +211,8 @@ public:
             collectable.set_flag(collect_sound_key_flag, profile.sound_key);
             collectable.set_flag(collectable_original_pos_flag, collectable.get_y());
             collectable.set_flag(collectable_float_bounce_amount_flag, randomint(0, 6));
+            collectable.set_flag(collectable_orig_x_flag, x);
+            collectable.set_flag(collectable_orig_y_flag, y);
             if (profile.type == Collectable_MODIFY_MAP)
             {
                 collectable.set_flag(collectable_flip_props_flag, profile.flip_props);
@@ -398,6 +400,32 @@ public:
                             collectable->set_health(-1);
                         }
                     }
+                    else if (collectable->get_flag(collectable_getting_sucked_in_flag) == 2)
+                    {
+                        const auto orig_x = collectable->get_flag(collectable_orig_x_flag);
+                        const auto orig_y = collectable->get_flag(collectable_orig_y_flag);
+                        if (fabs(collectable->get_x() - orig_x) < 20 &&
+                            fabs(collectable->get_y() - orig_y) < 20)
+                        {
+                            collectable->set_speed(0, 0);
+                            collectable->set_flag(collectable_getting_sucked_in_flag, 0);
+                            collectable->set_flag(collectable_original_pos_flag, collectable->get_y() + 10);
+                        }
+                        else
+                        {
+                            collectable->set_speed(
+                                orig_x < collectable->get_x() - 10 ? -1.5 : (orig_x > collectable->get_x() + 10 ? 1.5 : 0),
+                                orig_y < collectable->get_y() - 10 ? -1.5 : (orig_y > collectable->get_y() + 10 ? 1.5 : 0));
+                            collectable->set_flag(collectable_original_pos_flag, collectable->get_y() + 10);
+                        }
+                    }
+                    else if (fabs(collectable->get_x() - collectable->get_flag(collectable_orig_x_flag)) > 64 ||
+                             fabs(collectable->get_y() - collectable->get_flag(collectable_orig_y_flag)) > 64)
+                    {
+                        collectable->set_flag(collectable_getting_sucked_in_flag, 2);
+                        //collectable->set_position(collectable->get_flag(collectable_orig_x_flag), collectable->get_flag(collectable_orig_y_flag));
+                        //collectable->set_flag(collectable_original_pos_flag, collectable->get_y() + 10);
+                    }
                     else if (player->get_distance_sqr(*collectable) < 64 * 64)
                     {
                         collectable->set_speed(
@@ -406,7 +434,7 @@ public:
                         collectable->set_flag(collectable_original_pos_flag, collectable->get_y() + 10);
                         collectable->set_flag(collectable_getting_sucked_in_flag, 1);
                     }
-                    else if (collectable->get_flag(collectable_getting_sucked_in_flag))
+                    else if (collectable->get_flag(collectable_getting_sucked_in_flag) == 1)
                     {
                         collectable->set_speed(0, 0);
                         collectable->set_flag(collectable_getting_sucked_in_flag, 0);
@@ -741,32 +769,38 @@ public:
                                         {
                                             msg = "Key found, map modified";
                                             const auto props = obj->get_flag(collectable_flip_props_flag);
-                                            const auto temporary = 9999999;
+                                            const auto ssx = obj->get_flag(collectable_show_sx_flag);
+                                            const auto ssy = obj->get_flag(collectable_show_sy_flag);
+                                            const auto hsx = obj->get_flag(collectable_hide_sx_flag);
+                                            const auto hsy = obj->get_flag(collectable_hide_sy_flag);
 
-                                            tile_map.modify_map_props(props, temporary, [this](Tile &t)
-                                                                      {
-                                                                          auto &vfx = vfx_tool.add((t.get_x() + t.get_x2()) / 2,
-                                                                                                   (t.get_y() + t.get_y2()) / 2,
-                                                                                                   (t.get_y2() - t.get_y()) / 2, 1, 1, 1, 20);
-                                                                          VisualFxTool::disappear(vfx);
-                                                                      });
-                                            auto sx = obj->get_flag(collectable_show_sx_flag);
-                                            auto sy = obj->get_flag(collectable_show_sy_flag);
-                                            tile_map.modify_map_props(-props, props, [this, &sx, &sy](Tile &t)
-                                                                      {
-                                                                          t.get_sprite()->set_s_xy(sx, sy);
-                                                                          for (auto enemy : this->game_object_holder.get_category(GameObjectType_ENEMY))
-                                                                          {
-                                                                              if (t.check_point_inside(enemy->get_x(), enemy->get_y()))
-                                                                              {
-                                                                                  enemy->set_health(-1);
-                                                                              }
-                                                                          }
-                                                                      });
-                                            sx = obj->get_flag(collectable_hide_sx_flag);
-                                            sy = obj->get_flag(collectable_hide_sy_flag);
-                                            tile_map.modify_map_props(temporary, -props, [&sx, &sy](Tile &t)
-                                                                      { t.get_sprite()->set_s_xy(sx, sy); });
+                                            tile_map.modify_map([this, &props, &ssx, &ssy, &hsx, &hsy](TileBase *t, bool is_logical_tile)
+                                                                {
+                                                                    if (t->get_properties() == props || t->get_properties() == -props)
+                                                                    {
+                                                                        const auto hide = t->get_properties() == props;
+                                                                        t->set_properties(-t->get_properties());
+                                                                        if (!is_logical_tile)
+                                                                        {
+                                                                            ((Tile *)t)->get_sprite()->set_s_xy(hide ? hsx : ssx, hide ? hsy : ssy);
+                                                                            if (!hide)
+                                                                            {
+                                                                                for (auto enemy : this->game_object_holder.get_category(GameObjectType_ENEMY))
+                                                                                {
+                                                                                    if (t->check_point_inside(enemy->get_x(), enemy->get_y()))
+                                                                                    {
+                                                                                        enemy->set_health(-1);
+                                                                                    }
+                                                                                }
+                                                                            }
+
+                                                                            auto &vfx = vfx_tool.add((t->get_x() + t->get_x2()) / 2,
+                                                                                                     (t->get_y() + t->get_y2()) / 2,
+                                                                                                     (t->get_y2() - t->get_y()) / 2, 1, 1, 1, 20);
+                                                                            VisualFxTool::disappear(vfx);
+                                                                        }
+                                                                    }
+                                                                });
                                         }
                                         this->text_drawer.add_timed_permanent_text(obj->get_x(), obj->get_y(), msg, 40);
                                     });
