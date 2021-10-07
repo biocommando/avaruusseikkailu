@@ -49,13 +49,12 @@ public:
     int key;
     int channel;
     float volume = 1;
+    float delay_send = 0;
     bool allow_note_stealing = true;
 
     SynthVoice(float sample_rate, int key, int channel);
 
-    float process();
-
-    void pan_sample(const float orig, float &sample_left, float &sample_right);
+    void process(float *delay_sample, float *left, float *right);
 
     void release();
 

@@ -221,6 +221,10 @@ public:
                 collectable.set_flag(collectable_show_sx_flag, profile.shown_sprite_x);
                 collectable.set_flag(collectable_show_sy_flag, profile.shown_sprite_y);
             }
+            if (profile.type == Collectable_MISSION_TRIGGER)
+            {
+                collectable.set_flag(collectable_mission_trigger_id_flag, profile.mission_trigger_id);
+            }
             return &collectable;
         }
         return nullptr;
@@ -708,6 +712,7 @@ public:
                                         const auto bonus_amt = obj->get_flag(collectable_bonus_amount_flag);
                                         const auto buyval = obj->get_flag(collectable_buy_value_flag);
                                         auto msg = std::to_string(bonus_amt);
+                                        int msg_time = 40;
                                         if (type == Collectable_HEALTH)
                                         {
                                             auto health_bonus = player->get_health() + bonus_amt;
@@ -809,7 +814,14 @@ public:
                                                                     }
                                                                 });
                                         }
-                                        this->text_drawer.add_timed_permanent_text(obj->get_x(), obj->get_y(), msg, 40);
+                                        else if (type == Collectable_MISSION_TRIGGER)
+                                        {
+                                            msg_time = 200;
+                                            const auto t = this->mission_config.get_trigger(obj->get_flag(collectable_mission_trigger_id_flag));
+                                            if (t && t->type == "text")
+                                                msg = t->text;
+                                        }
+                                        this->text_drawer.add_timed_permanent_text(obj->get_x(), obj->get_y(), msg, msg_time);
                                     });
         game_object_holder.clean_up(GameObjectType_PLAYER, [this](GameObject *obj)
                                     {

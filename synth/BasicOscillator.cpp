@@ -4,9 +4,23 @@
 #include <math.h>
 constexpr int wtSize = 4537;
 
+static float sine_table[256];
+
+static void init_sine_table()
+{
+    static bool sine_table_initialized = false;
+    if (!sine_table_initialized)
+    {
+        sine_table_initialized = true;
+        for (int i = 0; i < 256; i++)
+            sine_table[i] = sin(6.283185307179586476925286766559 / 256 * i);
+    }
+}
+
 BasicOscillator::BasicOscillator(int sampleRate) : phase(0), hzToF(1.0f / (float)sampleRate),
                                                    frequency(0), wtPos(0), wtWindow(0)
 {
+    init_sine_table();
 }
 
 void BasicOscillator::setWaveTableParams(float pos, float window)
@@ -37,8 +51,7 @@ void BasicOscillator::randomizePhase(float rndAmount)
 
 inline float sin1(float phase)
 {
-    const float phase_rad = phase * 6.283185307179586476925286766559f;
-    return sin(phase_rad);
+    return sine_table[(int)(phase * 256)];
 }
 inline float tri1(float phase)
 {

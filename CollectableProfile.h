@@ -11,6 +11,7 @@ enum CollectableType
     Collectable_COIN,
     Collectable_MISSION_ITEM,
     Collectable_MODIFY_MAP,
+    Collectable_MISSION_TRIGGER,
 };
 
 static inline std::string collectable_type_to_string(const CollectableType t)
@@ -24,6 +25,7 @@ static inline std::string collectable_type_to_string(const CollectableType t)
         case Collectable_COIN: return "Coins";
         case Collectable_MISSION_ITEM: return "Mission item";
         case Collectable_MODIFY_MAP: return "Key";
+        case Collectable_MISSION_TRIGGER: return "Trigger";
         default: return "";
     }
 }
@@ -47,6 +49,7 @@ public:
     int shown_sprite_x = -1;
     int shown_sprite_y = -1;
     int id;
+    int mission_trigger_id = 0;
 
     std::string name;
 
@@ -86,6 +89,8 @@ public:
                                   m[id].type = Collectable_MISSION_ITEM;
                               else if (val == "modify_map")
                                   m[id].type = Collectable_MODIFY_MAP;
+                              else if (val == "mission_trigger")
+                                  m[id].type = Collectable_MISSION_TRIGGER;
                           }
                           if (key == "id")
                           {
@@ -116,6 +121,8 @@ public:
                               m[id].shown_sprite_x = std::stoi(val);
                           if (key == "shown_sy")
                               m[id].shown_sprite_y = std::stoi(val);
+                          if (key == "mission_trigger_id")
+                              m[id].mission_trigger_id = std::stoi(val);
                       },
                       [](const auto &s) {});
         cf.read_config_file(file);

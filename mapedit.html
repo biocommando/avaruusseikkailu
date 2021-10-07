@@ -146,13 +146,19 @@
 
         let spriteSheet = 'sprites/tile01.png'
 
-        let objectTypes = [{ name: 'player', id: 0 }]
-        fetch('/api/object-types')
-            .then(x => x.json())
-            .then(x => {
-                objectTypes = [...objectTypes, ...x]
-                objectSelect.innerHTML += x.map(y => `<option value="${y.name}">${y.name}</option>`)
-            })
+        let objectTypes
+        function updateObjectTypes() {
+            objectTypes = [{ name: 'player', id: 0 }]
+            return fetch('/api/object-types')
+                .then(x => x.json())
+                .then(x => {
+                    objectTypes = [...objectTypes, ...x]
+                    objectSelect.innerHTML = `
+                        <option value="none">select...</option>
+                        <option value="player">player</option>
+                        ` + x.map(y => `<option value="${y.name}">${y.name}</option>`)
+                })
+        }
 
         function setDimensions(_w, _h) {
             if (_w < w) map.splice(_w - 1)
@@ -258,26 +264,28 @@
 
         function load() {
             filename = projectName.value
-            fetch('/map-projects/' + filename)
-                .then(x => x.json())
-                .then(loaded => {
-                    w = loaded.w
-                    h = loaded.h
+            updateObjectTypes().then(() =>
+                fetch('/map-projects/' + filename)
+                    .then(x => x.json())
+                    .then(loaded => {
+                        w = loaded.w
+                        h = loaded.h
 
-                    for (let x = 0; x < w; x++) {
-                        for (let y = 0; y < h; y++) {
-                            loaded.map[x][y].objects = loaded.map[x][y].objects.map(o => {
-                                const found = objectTypes.find(ot => ot.id === o)
-                                if (found) return found.name
-                                return 'UNKNOWN_id=' + o
-                            })
+                        for (let x = 0; x < w; x++) {
+                            for (let y = 0; y < h; y++) {
+                                loaded.map[x][y].objects = loaded.map[x][y].objects.map(o => {
+                                    const found = objectTypes.find(ot => ot.id === o)
+                                    if (found) return found.name
+                                    return 'UNKNOWN_id=' + o
+                                })
+                            }
                         }
-                    }
-                    map = loaded.map
-                    spriteSheet = loaded.spriteSheet
-                    exportName.value = loaded.exportFilename
-                    renderMap()
-                })
+                        map = loaded.map
+                        spriteSheet = loaded.spriteSheet
+                        exportName.value = loaded.exportFilename
+                        renderMap()
+                    })
+            )
         }
 
         function save() {
@@ -384,6 +392,7 @@
 
         setDimensions(30, 30)
         renderMap()
+        updateObjectTypes()
     </script>
 </body>
 

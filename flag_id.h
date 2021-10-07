@@ -36,6 +36,7 @@ constexpr int collectable_show_sx_flag = 413;
 constexpr int collectable_show_sy_flag = 414;
 constexpr int collectable_orig_x_flag = 415;
 constexpr int collectable_orig_y_flag = 416;
+constexpr int collectable_mission_trigger_id_flag = 417;
 
 constexpr int player_coins_flag = 1100;
 

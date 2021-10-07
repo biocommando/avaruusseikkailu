@@ -1,18 +1,6 @@
 [
     {
         "type": "collectable",
-        "data": {
-            "name": "Medium health",
-            "amount": "50",
-            "sprite": "config/sprite/pickup/cross.ini",
-            "type": "health",
-            "sound": "10",
-            "sound_key": "34",
-            "cost": "500"
-        }
-    },
-    {
-        "type": "collectable",
         "link_id": "medium_health",
         "data": {
             "name": "Medium health",
@@ -22,17 +10,6 @@
             "sound": "10",
             "sound_key": "34",
             "cost": "500"
-        }
-    },
-    {
-        "type": "collectable",
-        "data": {
-            "name": "A few coins",
-            "sprite": "config/sprite/pickup/small_circle.ini",
-            "type": "coin",
-            "amount": "100",
-            "sound": "9",
-            "sound_key": "69"
         }
     },
     {
@@ -49,6 +26,7 @@
     },
     {
         "type": "collectable",
+        "link_id": "armor_200p",
         "data": {
             "name": "Medium armor",
             "sprite": "config/sprite/pickup/rectangle.ini",
@@ -61,6 +39,7 @@
     },
     {
         "type": "collectable",
+        "link_id": "mission_item_1",
         "data": {
             "name": "Mission item 1",
             "sprite": "config/sprite/pickup/star.ini",
@@ -71,6 +50,7 @@
     },
     {
         "type": "collectable",
+        "link_id": "small_health",
         "data": {
             "name": "Small health",
             "amount": "20",
@@ -93,13 +73,13 @@
         }
     },
     {
+        "virtual": true,
         "type": "collectable",
-        "link_id": "flip_type_1",
+        "link_id": "flip_base",
         "data": {
-            "name": "Flip type 1",
+            "name": "Flip type",
             "sprite": "config/sprite/pickup/circle.ini",
             "type": "modify_map",
-            "flip_props": "3",
             "hidden_sx": "192",
             "hidden_sy": "224",
             "shown_sx": "160",
@@ -109,19 +89,19 @@
         }
     },
     {
-        "type": "collectable",
+        "inherit": "<collectable.flip_base>",
+        "link_id": "flip_type_1",
+        "data": {
+            "name": "{base} 1",
+            "flip_props": "3"
+        }
+    },
+    {
+        "inherit": "<collectable.flip_base>",
         "link_id": "flip_type_2",
         "data": {
-            "name": "Flip type 2",
-            "sprite": "config/sprite/pickup/circle.ini",
-            "type": "modify_map",
-            "flip_props": "4",
-            "hidden_sx": "192",
-            "hidden_sy": "224",
-            "shown_sx": "160",
-            "shown_sy": "224",
-            "sound": "10",
-            "sound_key": "54"
+            "name": "{base} 2",
+            "flip_props": "4"
         }
     }
 ]

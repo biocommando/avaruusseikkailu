@@ -8,6 +8,6 @@
         "hitbox_h": "22",
         "health": "200",
         "weapon": "<weapon.AA Flak>",
-        "drop_collectable": "<collectable.Medium health>"
+        "drop_collectable": "<collectable.medium_health>"
     }
 }]
