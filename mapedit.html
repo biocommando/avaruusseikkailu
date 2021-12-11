@@ -123,14 +123,30 @@
         <option value="none">select...</option>
         <option value="player">player</option>
     </select>
-    <br>
+    <br />
     <textarea id="objectList" cols="20" rows="8"></textarea>
-    <br>
+    <br />
     <button onclick="setObjectList()">Set</button>
     <button onclick="clearObjectList()">Clear (del)</button>
     <button onclick="copyObjectList()">Copy (c)</button>
     <button onclick="copyObjectList(true)">Cut (x)</button>
     <button onclick="pasteObjectList()">Paste (v)</button>
+    <hr />
+    Triggers:
+    <div id="triggerList"></div>
+    <button onclick="addTrigger()">Add trigger</button>
+    <hr />
+    Goals:
+    <div id="goalList"></div>
+    <button onclick="addGoal()">Add goal</button>
+    <br />
+    Goal types: kill, retrieve, survive_until, time_limit
+    <hr />
+    Other data:
+    <div>
+        Name: <input id="mapNameInput"><br />
+        Map number: <input id="mapNumberInput"><br />
+    </div>
     <hr />
     <div id="projectList"></div>
     <input id="projectName">
@@ -138,11 +154,14 @@
     <button onclick="save()">Save project</button>
     <input id="exportName" value="map1.json">
     <button onclick="exportIni()">Export ini file</button>
+    <button onclick="testplay()">Test map</button>
     <span id="saveStatus"></span>
     <script>
         let w, h
         let cursor = { x: 0, y: 0 }
         let map = []
+        let triggerIds = []
+        let goalIds = []
 
         let spriteSheet = 'sprites/tile01.png'
 
@@ -260,6 +279,66 @@
             }, 1000);
         }
 
+        const triggerProps = ['id', 'type', 'text']
+
+        function getTriggerHtml(trig) {
+            const id = Date.now() + '-' + Math.random()
+            triggerIds.push(id)
+            let html = `<div id="triggers--${id}">`
+            triggerProps.forEach(prop =>
+                html += `${prop}: <input id="triggers--${id}-${prop}" value="${trig[prop] || ''}">`)
+            html += `<button onclick="deleteTrigger('${id}')">Delete</button>`
+            html += '</div>'
+            return html
+        }
+
+        function renderTriggers(triggers) {
+            let html = ''
+            triggerIds = []
+            triggers.forEach(trig => {
+                html += getTriggerHtml(trig)
+            })
+            document.getElementById('triggerList').innerHTML = html
+        }
+
+        function addTrigger() {
+            const el = document.createElement('div')
+            el.innerHTML = getTriggerHtml({})
+            document.getElementById('triggerList').appendChild(el)
+        }
+
+        function deleteTrigger(id) {
+            document.getElementById(`triggers--${id}`).remove()
+        }
+
+        function getGoalHtml(goal) {
+            const id = Date.now() + '-' + Math.random()
+            goalIds.push(id)
+            return `<div id="goals--${id}">` +
+                `Type/value: <input id="goals--${id}-value" value="${goal.type} / ${goal.value}" />` +
+                `<button onclick="deleteGoal('${id}')">Delete</button>` +
+                `</div>`
+        }
+
+        function renderGoals(goals) {
+            let html = ''
+            goalIds = []
+            goals.forEach(goal => {
+                html += getGoalHtml(goal)
+            })
+            document.getElementById('goalList').innerHTML = html
+        }
+
+        function addGoal() {
+            const el = document.createElement('div')
+            el.innerHTML = getGoalHtml({ type: 'kill', value: 0 })
+            document.getElementById('goalList').appendChild(el)
+        }
+
+        function deleteGoal(id) {
+            document.getElementById(`goals--${id}`).remove()
+        }
+
         let filename = 'map1.json'
 
         function load() {
@@ -281,11 +360,33 @@
                             }
                         }
                         map = loaded.map
+                        renderTriggers(loaded.triggers)
+                        renderGoals(loaded.goals)
+                        document.getElementById('mapNameInput').value = loaded.name
+                        document.getElementById('mapNumberInput').value = loaded.num
                         spriteSheet = loaded.spriteSheet
                         exportName.value = loaded.exportFilename
                         renderMap()
                     })
             )
+        }
+
+        function getGoalsAndTriggers() {
+            const triggers = []
+            triggerIds.forEach(id => {
+                const trig = {}
+                triggerProps.forEach(prop => {
+                    trig[prop] = document.getElementById(`triggers--${id}-${prop}`).value
+                })
+                triggers.push(trig)
+            })
+            const goals = []
+            goalIds.forEach(id => {
+                const [type, value] = document.getElementById(`goals--${id}-value`).value
+                    .split('/').map(x => x.trim())
+                goals.push({ type, value })
+            })
+            return { goals, triggers }
         }
 
         function save() {
@@ -305,7 +406,15 @@
                 }
             }
 
-            fetch('/api/save/' + filename, { method: 'POST', body: JSON.stringify({ w, h, map: mapcpy, spriteSheet, exportFilename: exportName.value }) })
+            const { goals, triggers } = getGoalsAndTriggers()
+
+            const data = {
+                w, h, map: mapcpy, spriteSheet,
+                exportFilename: exportName.value, triggers, goals,
+                name: document.getElementById('mapNameInput').value,
+                num: document.getElementById('mapNumberInput').value
+            }
+            fetch('/api/save/' + filename, { method: 'POST', body: JSON.stringify(data) })
                 .then(() => updateProjectList())
                 .then(() => displaySavedIndicator('Saved to ' + filename))
         }
@@ -324,13 +433,26 @@
                     })
                 }
             }
+            const { goals, triggers } = getGoalsAndTriggers()
+            const data = {
+                data: flatMap, spriteSheet, goals, triggers,
+                name: document.getElementById('mapNameInput').value,
+                num: document.getElementById('mapNumberInput').value
+            }
+
             fetch('/api/export/' + exportName.value + '.ini',
-                { method: 'POST', body: JSON.stringify({ data: flatMap, spriteSheet }) })
+                { method: 'POST', body: JSON.stringify(data) })
                 .then(() => displaySavedIndicator('Exported to ' + exportName.value + '.ini'))
         }
 
+        function testplay() {
+            save()
+            exportIni()
+            fetch('/api/testplay/' + exportName.value + '.ini', {method: 'POST'})
+        }
+
         function handleKeyPress(code) {
-            if (document.activeElement.id === 'objectList')
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName))
                 return true
             if (code == 'KeyC') {
                 copyObjectList()

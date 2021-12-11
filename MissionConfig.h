@@ -20,22 +20,12 @@ public:
 
 class MissionConfig
 {
-public:
-    std::string name;
-    int mission_number;
-    std::vector<MissionGoal> mission_goals;
-    std::string map_file;
-    std::string music;
-    int buy_allow_flags = 1;
-    std::vector<MissionTrigger> triggers;
-
-    static std::vector<MissionConfig> read_from_file(const std::string &file)
+    static void read_from_file(const std::string &file, std::vector<MissionConfig> &v)
     {
-        std::vector<MissionConfig> v;
         MissionConfig c;
         MissionGoal g;
         MissionTrigger t;
-        ConfigFile cf([&c, &g, &t](const auto &key, const auto &val)
+        ConfigFile cf([&c, &g, &t, &v](const auto &key, const auto &val)
                       {
                           if (key == "num")
                               c.mission_number = std::stoi(val);
@@ -58,6 +48,8 @@ public:
                               t.text = val;
                           if (key == "trigger_id")
                               t.id = std::stoi(val);
+                          if (key == "include")
+                              read_from_file(val, v);
                       },
                       [&c, &v, &g, &t](const auto &s)
                       {
@@ -78,6 +70,21 @@ public:
                           }
                       });
         cf.read_config_file(file);
+    }
+
+public:
+    std::string name;
+    int mission_number;
+    std::vector<MissionGoal> mission_goals;
+    std::string map_file;
+    std::string music;
+    int buy_allow_flags = 1;
+    std::vector<MissionTrigger> triggers;
+
+    static std::vector<MissionConfig> read_from_file(const std::string &file)
+    {
+        std::vector<MissionConfig> v;
+        read_from_file(file, v);
         return v;
     }
 

@@ -2,6 +2,7 @@
 #include "World.h"
 #include "MissionMenu.h"
 #include "allegro5/allegro_audio.h"
+#include "ArgParser.h"
 
 float camera_offset_x = 0, camera_offset_y = 50;
 int screen_w = 640 * 2, screen_h = 480 * 2;
@@ -113,6 +114,7 @@ int play_mission(MissionConfig &mission_config, ALLEGRO_EVENT_QUEUE *queue)
 
 int main(int argc, char **argv)
 {
+    auto args = parse_arguments(argc, argv);
     srand((int)time(nullptr));
     ALLEGRO_DISPLAY *display;
     ALLEGRO_TIMER *timer;
@@ -156,7 +158,13 @@ int main(int argc, char **argv)
     playlist.read_from_file("sounds/playlist.ini");
     playlist.randomize_order();
 
-    auto mission_configs = MissionConfig::read_from_file("config/missions.ini");
+    std::string missions_file = "config/missions.ini";
+    if (args["-testplay_mission"] != "")
+    {
+        missions_file = args["-testplay_mission"];
+    }
+
+    auto mission_configs = MissionConfig::read_from_file(missions_file);
     int last_accomplished = -1;
     while (true)
     {

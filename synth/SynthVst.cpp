@@ -18,9 +18,9 @@ constexpr const char *file_guid = "9ef9ad6d-26ab-47e6-9bc4-484edb92e144";
 
 static inline void log(std::string s)
 {
-    FILE *f = fopen("C:\\Users\\space\\Desktop\\avaruusseikkailu\\synth\\log.txt", "a");
+    /*FILE *f = fopen("C:\\Users\\space\\Desktop\\avaruusseikkailu\\synth\\log.txt", "a");
     fprintf(f, s.c_str());
-    fclose(f);
+    fclose(f);*/
 }
 
 static inline std::string getWorkDir()
@@ -188,7 +188,7 @@ public:
         current_param = new CTextEdit(rect_options, this, 2000, "0");
         xframe->addView(current_param);
 
-        //knobBg->forget();
+        knobBg->forget();
         /*knobBackground->forget();
         backgroundImage->forget();*/
 
@@ -291,7 +291,7 @@ class SynthVst : public AudioEffectX
     char *chunk = nullptr;
     std::vector<Parameter> parameters;
     SynthParams currentParams;
-    Synth synth;
+    Synth *synth = nullptr;
     float delay_send, delay_time, delay_feed;
     int my_id;
 
@@ -391,9 +391,9 @@ class SynthVst : public AudioEffectX
         if (set_instrument)
         {
             if (name == "deltm" || name == "delfb")
-                synth.set_send_delay_params(delay_feed, delay_time);
+                synth->set_send_delay_params(delay_feed, delay_time);
             else
-                synth.add_instrument(0, currentParams, delay_send);
+                synth->add_instrument(0, currentParams, delay_send);
         }
     }
 
@@ -403,12 +403,12 @@ class SynthVst : public AudioEffectX
         {
             sync_param(param.name, param.value, false);
         }
-        synth.add_instrument(0, currentParams, delay_send);
-        synth.set_send_delay_params(delay_feed, delay_time);
+        synth->add_instrument(0, currentParams, delay_send);
+        synth->set_send_delay_params(delay_feed, delay_time);
     }
 
 public:
-    SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 27), synth(sampleRate)
+    SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 27)
     {
         setNumInputs(2);          // stereo in
         setNumOutputs(2);         // stereo out
@@ -443,7 +443,7 @@ public:
         add_param("pan", 0.5);
         // This can be used to identify correct instrument instances from the binary chunk
         add_param("my_id", 0);
-        sync_params();
+        //sync_params();
     }
 
     ~SynthVst()
@@ -453,6 +453,7 @@ public:
             free(chunk);
             chunk = nullptr;
         }
+        delete synth;
     }
     VstInt32 getChunk(void **data, bool isPreset)
     {
@@ -512,8 +513,8 @@ public:
 
     void processReplacing(float **inputs, float **outputs, VstInt32 sampleFrames)
     {
-        synth.process(outputs[0], outputs[1], sampleFrames);
-        //memcpy(outputs[1], outputs[0], sizeof(float) * sampleFrames);
+        synth->process(outputs[0], outputs[1], sampleFrames);
+        // memcpy(outputs[1], outputs[0], sizeof(float) * sampleFrames);
     }
 
     float getParameter(VstInt32 index)
@@ -615,12 +616,14 @@ public:
             unsigned char midiMessage[3];
             memcpy(midiMessage, midievent->midiData, 3);
             midiMessage[0] = midiMessage[0] & 0xF0;
-            synth.handle_midi_event(midiMessage);
+            synth->handle_midi_event(midiMessage);
         }
         return 0;
     }
     void open()
     {
+        synth = new Synth(getSampleRate());
+        sync_params();
 #ifdef VST_GUI
         setEditor(new SynthVstGui(this));
 #endif

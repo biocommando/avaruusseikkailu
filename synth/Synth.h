@@ -73,7 +73,7 @@ class Synth
     float send_delay_amounts[16];
 
 public:
-    Synth(float sample_rate) : sample_rate(sample_rate), send_delay(sample_rate)
+    Synth(float sample_rate) : sample_rate(sample_rate), send_delay(sample_rate, sample_rate)
     {
     }
 
