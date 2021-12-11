@@ -1,0 +1,54 @@
+[
+    {
+        "virtual": true,
+        "type": "collectable",
+        "link_id": "mission_trigger_base",
+        "data": {
+            "name": "Mission trigger",
+            "sprite": "config/sprite/pickup/circle.ini",
+            "type": "mission_trigger",
+            "sound": "10",
+            "sound_key": "54"
+        }
+    },
+    {
+        "inherit": "<collectable.mission_trigger_base>",
+        "link_id": "mission_trigger_1",
+        "data": {
+            "name": "{base} 1",
+            "mission_trigger_id": "1"
+        }
+    },
+    {
+        "inherit": "<collectable.mission_trigger_base>",
+        "link_id": "mission_trigger_2",
+        "data": {
+            "name": "{base} 2",
+            "mission_trigger_id": "2"
+        }
+    },
+    {
+        "inherit": "<collectable.mission_trigger_base>",
+        "link_id": "mission_trigger_3",
+        "data": {
+            "name": "{base} 3",
+            "mission_trigger_id": "3"
+        }
+    },
+    {
+        "inherit": "<collectable.mission_trigger_base>",
+        "link_id": "mission_trigger_4",
+        "data": {
+            "name": "{base} 4",
+            "mission_trigger_id": "4"
+        }
+    },
+    {
+        "inherit": "<collectable.mission_trigger_base>",
+        "link_id": "mission_trigger_5",
+        "data": {
+            "name": "{base} 5",
+            "mission_trigger_id": "5"
+        }
+    }
+]
