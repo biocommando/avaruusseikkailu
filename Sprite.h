@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include "log.h"
 
 extern float camera_offset_x, camera_offset_y;
 
@@ -53,14 +54,14 @@ class Sprite
 
     int frame = -1;
     int timer = 0;
-    int sx;
-    int sy;
-    int flip;
+    int sx = 0;
+    int sy = 0;
+    int flip = 0;
     float zoom = 1;
     float angle = 0;
     bool simple = true;
-    float w;
-    float h;
+    float w = 0;
+    float h = 0;
 
     void sync()
     {
@@ -98,7 +99,7 @@ public:
         std::ifstream ifs;
         ifs.open(init_file);
         std::string s;
-        int x, y, id, length, flip;
+        int x, y, id, length, flip = 0;
         while (std::getline(ifs, s))
         {
             if (s == "end")
@@ -162,7 +163,8 @@ public:
                       << ", has_next=" << std::to_string(f.has_next)
                       << ", length=" << std::to_string(f.length)
                       << ", x=" << std::to_string(f.x)
-                      << ", y=" << std::to_string(f.y) << std::endl;
+                      << ", y=" << std::to_string(f.y) 
+                      << ", flip=" << std::to_string(f.flip) << std::endl;
         }
     }
 
