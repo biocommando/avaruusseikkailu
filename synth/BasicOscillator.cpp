@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
-constexpr int wtSize = 4537;
 
 static float sine_table[256];
 
@@ -29,9 +28,10 @@ void BasicOscillator::setWaveTableParams(float pos, float window)
     wtPos = pos * (wtSize - wtWindow - 1);
 }
 
-void BasicOscillator::setWavetable(float *wt)
+void BasicOscillator::setWavetable(float *wt, int size)
 {
     this->wt = wt;
+    wtSize = size;
 }
 
 BasicOscillator::~BasicOscillator()
@@ -84,7 +84,15 @@ void BasicOscillator::calculateNext()
 {
     phase = phase + frequency;
     if (phase >= 1.0)
+    {
+        if (wt_oneshot)
+        {
+            wt_oneshot = false;
+            setWavetable(sine_table, 1);
+            setWaveTableParams(0, 1);
+        }
         phase = phase - 1.0f;
+    }
 }
 void BasicOscillator::setFrequency(float f_Hz)
 {
@@ -104,6 +112,27 @@ float BasicOscillator::getValue(enum OscType oscType)
         return sqr1(phase);
     case OSC_WT:
         return wt1(wt, phase, wtPos, wtWindow, dcFilterState);
+    default:
+        return 0;
+    }
+}
+float BasicOscillator::getValue(enum OscType oscType, float fmAmount)
+{
+    float p = phase + fmAmount;
+    while (p >= 1) p -= 1;
+    while (p < 0) p += 1;
+    switch (oscType)
+    {
+    case OSC_SINE:
+        return sin1(p);
+    case OSC_TRIANGLE:
+        return tri1(p);
+    case OSC_SAW:
+        return saw1(p);
+    case OSC_SQUARE:
+        return sqr1(p);
+    case OSC_WT:
+        return wt1(wt, p, wtPos, wtWindow, dcFilterState);
     default:
         return 0;
     }

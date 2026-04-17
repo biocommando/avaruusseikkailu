@@ -22,6 +22,11 @@ struct SynthParams
     float filter_mod_amount;
     float volume;
     float pan;
+    int osc2_to_1_fm = 0;
+    int wt1_slot = 0;
+    int wt2_slot = 0;
+    int wt_oneshot = 0;
+    int note_offset = 0;
 };
 
 class SynthVoice
@@ -44,6 +49,7 @@ class SynthVoice
     float filter_mod_amount;
     float left_volume;
     float right_volume;
+    bool fm = true;
 
 public:
     int key;

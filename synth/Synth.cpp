@@ -4,16 +4,18 @@
 #include <string>
 #include <iostream>
 #include "kick_wav.h"
+#include "cimpl/wt_sample_loader.h"
 
 SynthVoice::SynthVoice(float sample_rate, int key, int channel)
     : sample_rate(sample_rate), filter(sample_rate), osc1(sample_rate),
       osc2(sample_rate), key(key), channel(channel)
 {
+    struct wt_sample *wts = get_wt_sample(0);
     // This is kind of cheating but creating good sounding kicks
     // is just near impossible with this limited sub synth otherwise
-    osc1.setWavetable(get_kick_wav());
+    osc1.setWavetable(wts->data, wts->size);
     osc1.setWaveTableParams(0, 1);
-    osc2.setWavetable(get_kick_wav());
+    osc2.setWavetable(wts->data, wts->size);
     osc2.setWaveTableParams(0, 1);
     amp_envelope.trigger();
     filter_envelope.trigger();
@@ -30,15 +32,24 @@ static inline unsigned _random()
 void SynthVoice::process(float *delay_sample, float *left, float *right)
 {
     float v = 0;
-    if (osc1_mix > 0)
+    if (fm)
     {
         osc1.calculateNext();
-        v += osc1.getValue((OscType)osc1_type) * osc1_mix;
-    }
-    if (osc2_mix > 0)
-    {
         osc2.calculateNext();
-        v += osc2.getValue((OscType)osc2_type) * osc2_mix;
+        v +=  osc1.getValue((OscType)osc1_type, osc2.getValue((OscType)osc2_type) * osc2_mix) * osc1_mix;
+    }
+    else
+    {
+        if (osc1_mix > 0)
+        {
+            osc1.calculateNext();
+            v += osc1.getValue((OscType)osc1_type) * osc1_mix;
+        }
+        if (osc2_mix > 0)
+        {
+            osc2.calculateNext();
+            v += osc2.getValue((OscType)osc2_type) * osc2_mix;
+        }
     }
     filter_envelope.calculateNext();
     if (env_to_pitch)
@@ -85,11 +96,14 @@ inline float note_to_hz(float note)
 
 void SynthVoice::set_params(const SynthParams &params)
 {
-    osc1_base_freq = note_to_hz(key + params.osc1_semitones);
+    int modified_key = key + params.note_offset;
+    if (modified_key < 0) modified_key = 0;
+    if (modified_key > 127) modified_key = 127;
+    osc1_base_freq = note_to_hz(modified_key + params.osc1_semitones);
     osc1.setFrequency(osc1_base_freq);
     osc1_type = params.osc1_type;
     osc1_mix = params.osc1_mix;
-    osc2_base_freq = note_to_hz(key + params.osc2_semitones);
+    osc2_base_freq = note_to_hz(modified_key + params.osc2_semitones);
     osc2.setFrequency(osc2_base_freq);
     if (params.randomize_phase)
     {
@@ -120,6 +134,26 @@ void SynthVoice::set_params(const SynthParams &params)
     right_volume = params.pan > 0.5 ? 1 : 2 * params.pan;
 
     volume *= params.volume;
+
+    fm = params.osc2_to_1_fm;
+
+    if (params.wt1_slot != 0)
+    {
+        wt_sample *wts = get_wt_sample(params.wt1_slot);
+        osc1.setWavetable(wts->data, wts->size);
+        osc1.setWaveTableParams(0, 1);
+    }
+    if (params.wt2_slot != 0)
+    {
+        wt_sample *wts = get_wt_sample(params.wt2_slot);
+        osc2.setWavetable(wts->data, wts->size);
+        osc2.setWaveTableParams(0, 1);
+    }
+    if (params.wt_oneshot)
+    {
+        osc1.wt_oneshot = true;
+        osc2.wt_oneshot = true;
+    }
 }
 
 bool SynthVoice::ended()

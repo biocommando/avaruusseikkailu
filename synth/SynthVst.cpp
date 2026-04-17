@@ -5,6 +5,7 @@
 #include <fstream>
 #endif
 #include "Synth.h"
+#include "cimpl/wt_sample_loader.h"
 #include <cstring>
 
 struct Parameter
@@ -123,7 +124,7 @@ public:
     bool open(void *ptr)
     {
         log("loaded data\n");
-        CRect frameSize(0, 0, 700, 600);
+        CRect frameSize(0, 0, 750, 600);
         CColor cBg = {127, 127, 127, 255}, cFg = kWhiteCColor;
         ERect *wSize;
         getRect(&wSize);
@@ -146,7 +147,7 @@ public:
                 break;
             std::string s_name = std::string(param_name);
             if (s_name == "o2type" || s_name == "v_a" || s_name == "f_a" ||
-                s_name == "cut" || s_name == "env2p" || s_name == "volume")
+                s_name == "cut" || s_name == "env2p" || s_name == "volume" || s_name == "wt1shot")
             {
                 y = 10;
                 x += 90;
@@ -294,6 +295,7 @@ class SynthVst : public AudioEffectX
     Synth *synth = nullptr;
     float delay_send, delay_time, delay_feed;
     int my_id;
+    std::vector<std::string> wt_sample_slot_names;
 
     static std::vector<std::string> splitString(const std::string &s, char c)
     {
@@ -338,6 +340,14 @@ class SynthVst : public AudioEffectX
             currentParams.osc1_mix = value;
         if (name == "o2mix")
             currentParams.osc2_mix = value;
+
+        if (name == "o2o1_fm")
+            currentParams.osc2_to_1_fm = value > 0.5 ? 1 : 0;
+        
+        if (name == "o1_wt")
+            currentParams.wt1_slot = (int)(MAX_WT_SAMPLE_SLOTS * value * 0.99);
+        if (name == "o2_wt")
+            currentParams.wt2_slot = (int)(MAX_WT_SAMPLE_SLOTS * value * 0.99);
 
         if (name == "v_a")
             currentParams.amp_attack = value;
@@ -388,6 +398,12 @@ class SynthVst : public AudioEffectX
         if (name == "pan")
             currentParams.pan = value;
 
+        if (name == "wt1shot")
+            currentParams.wt_oneshot = value > 0.5 ? 1 : 0;
+            
+        if (name == "keyoffs")
+            currentParams.note_offset = 128 * value - 64;
+
         if (set_instrument)
         {
             if (name == "deltm" || name == "delfb")
@@ -407,6 +423,16 @@ class SynthVst : public AudioEffectX
         synth->set_send_delay_params(delay_feed, delay_time);
     }
 
+    void read_wt_sample_slot_names()
+    {
+        std::ifstream ifs;
+        ifs.open(getWorkDir() + "\\wt_sample_slot_names.txt");
+        std::string s;
+        while (std::getline(ifs, s))
+        {
+            wt_sample_slot_names.push_back(s);
+        }
+    }
 public:
     SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 27)
     {
@@ -443,7 +469,14 @@ public:
         add_param("pan", 0.5);
         // This can be used to identify correct instrument instances from the binary chunk
         add_param("my_id", 0);
+        add_param("o2o1_fm", 0);
+        add_param("o1_wt", 0);
+        add_param("o2_wt", 0);
+        add_param("wt1shot", 0);
+        add_param("keyoffs", 0.5);
+        // Note: add new parameters to the end to not mess up the presets
         //sync_params();
+        hasEditor();
     }
 
     ~SynthVst()
@@ -454,6 +487,7 @@ public:
             chunk = nullptr;
         }
         delete synth;
+        wt_sample_free();
     }
     VstInt32 getChunk(void **data, bool isPreset)
     {
@@ -470,7 +504,7 @@ public:
             s += param.name + "=" + std::to_string(param.value) + '\n';
         }
         // To make it possible to parse settings directly from DAW project file
-        s += "tempo=" + std::to_string(getTimeInfo(kVstTempoValid)->tempo) + '\n';
+        // s += "tempo=" + std::to_string(getTimeInfo(kVstTempoValid)->tempo) + '\n';
         s += "SYNTH_DATA_END\n";
         chunk = (char *)malloc(s.size() + 1);
         if (chunk)
@@ -550,14 +584,15 @@ public:
         if (index < parameters.size())
         {
             const auto &param = parameters[index];
-            if (param.name == "phrand" || param.name == "env2p")
+            if (param.name == "phrand" || param.name == "env2p" || param.name == "o2o1_fm" ||
+                param.name == "wt1shot")
                 strcpy(text, param.value > 0.5 ? "yes" : "no");
             else if (param.name == "deltm")
                 strcpy(text, std::to_string((int)(param.value * 1000)).c_str());
             else if (param.name == "o1type" || param.name == "o2type")
             {
                 const char waves[][5] = {
-                    "sin", "tri", "saw", "sqr", "kick"};
+                    "sin", "tri", "saw", "sqr", "wtbl"};
                 int sel = 5 * param.value * 0.99;
                 strcpy(text, waves[sel]);
             }
@@ -582,6 +617,19 @@ public:
             }
             else if (param.name == "my_id")
                 strcpy(text, std::to_string((int)(16 * param.value * .99)).c_str());
+            else if (param.name == "o1_wt" || param.name == "o2_wt" )
+            {
+                int slot = MAX_WT_SAMPLE_SLOTS * param.value * 0.99;
+                if (slot < wt_sample_slot_names.size())
+                    strcpy(text, wt_sample_slot_names[slot].c_str());
+                else
+                    sprintf(text, "slot %d", slot);
+            }
+            else if (param.name == "keyoffs")
+            {
+                int offset = 128 * param.value - 64;
+                sprintf(text, "%s%d", offset > 0 ? "+" : "", offset);
+            }
             else
                 float2string(param.value, text, kVstMaxParamStrLen);
         }
@@ -622,6 +670,8 @@ public:
     }
     void open()
     {
+        read_wt_sample_slot_names();
+        wt_sample_read_all(getWorkDir().c_str());
         synth = new Synth(getSampleRate());
         sync_params();
 #ifdef VST_GUI
