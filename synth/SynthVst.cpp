@@ -9,7 +9,7 @@
 #include "Synth.h"
 #include "cimpl/wt_sample_loader.h"
 #include <cstring>
-extern void clap_debug_logger(const char *ctx, const char *fmt, ...);
+
 typedef int VstInt32;
 typedef short VstInt16;
 
@@ -29,14 +29,6 @@ public:
 
 static inline std::string getWorkDir()
 {
-    // work out the resource directory
-    // first we get the DLL path from windows API
-    /*extern void *hInstance;
-    wchar_t workDirWc[1024];
-    GetModuleFileName((HMODULE)hInstance, workDirWc, 1024);
-    char workDirC[1024];
-    wcstombs(workDirC, workDirWc, 1024);*/
-
     std::string d = get_plugin_path();
 
     // let's get rid of the DLL file name
@@ -61,7 +53,6 @@ class SynthVst
 
     static std::vector<std::string> splitString(const std::string &s, char c)
     {
-        clap_debug_logger("plugin", "splitString");
         std::vector<std::string> ret;
         int pos = 0;
         do
@@ -106,7 +97,7 @@ class SynthVst
 
         if (name == "o2o1_fm")
             currentParams.osc2_to_1_fm = value > 0.5 ? 1 : 0;
-        
+
         if (name == "o1_wt")
             currentParams.wt1_slot = (int)(MAX_WT_SAMPLE_SLOTS * value * 0.99);
         if (name == "o2_wt")
@@ -178,7 +169,6 @@ class SynthVst
 
     void sync_params()
     {
-        clap_debug_logger("plugin", "sync_params");
         for (auto &param : parameters)
         {
             sync_param(param.name, param.value, false);
@@ -189,14 +179,12 @@ class SynthVst
 
     void read_wt_sample_slot_names()
     {
-        clap_debug_logger("plugin", "read_wt_sample_slot_names");
         std::ifstream ifs;
         ifs.open(getWorkDir() + "\\wt_sample_slot_names.txt");
         std::string s;
         while (std::getline(ifs, s))
         {
             wt_sample_slot_names.push_back(s);
-            clap_debug_logger("plugin", "slot: %s", wt_sample_slot_names[wt_sample_slot_names.size()-1].c_str());
         }
     }
     bool opened = false;
@@ -205,12 +193,6 @@ public:
 	void *editor = nullptr;
     SynthVst()
     {
-        clap_debug_logger("plugin", "SynthVst()");
-        /*setNumInputs(2);          // stereo in
-        setNumOutputs(2);         // stereo out
-        setUniqueID(-1336835329); // identify
-        isSynth(true);
-        programsAreChunks();*/
         add_param("o1type", 0);
         add_param("o1tune", 0.5);
         add_param("o1mix", 1);
@@ -245,13 +227,10 @@ public:
         add_param("wt1shot", 0);
         add_param("keyoffs", 0.5);
         // Note: add new parameters to the end to not mess up the presets
-        //sync_params();
-        //hasEditor();
     }
 
     ~SynthVst()
     {
-        clap_debug_logger("plugin", "~SynthVst()");
         if (chunk)
         {
             free(chunk);
@@ -262,7 +241,6 @@ public:
     }
     VstInt32 getChunk(void **data, bool isPreset)
     {
-        clap_debug_logger("plugin", "getChunk");
         if (chunk)
         {
             free(chunk);
@@ -276,7 +254,6 @@ public:
             s += param.name + "=" + std::to_string(param.value) + '\n';
         }
         // To make it possible to parse settings directly from DAW project file
-        // s += "tempo=" + std::to_string(getTimeInfo(kVstTempoValid)->tempo) + '\n';
         s += "SYNTH_DATA_END\n";
         chunk = (char *)malloc(s.size() + 1);
         if (chunk)
@@ -290,7 +267,6 @@ public:
 
     VstInt32 setChunk(void *data, VstInt32 byteSize, bool isPreset)
     {
-        clap_debug_logger("plugin", "setChunk");
         std::string s((char *)data, byteSize);
         const auto lines = splitString(s, '\n');
         for (const auto &line : lines)
@@ -323,19 +299,16 @@ public:
     void processReplacing(float **inputs, float **outputs, VstInt32 sampleFrames)
     {
         synth->process(outputs[0], outputs[1], sampleFrames);
-        // memcpy(outputs[1], outputs[0], sizeof(float) * sampleFrames);
     }
 
     float getParameter(VstInt32 index)
     {
-        clap_debug_logger("plugin", "getParameter");
         if (index < parameters.size())
             return parameters[index].value;
         return 0;
     }
     void setParameter(VstInt32 index, float value)
     {
-        clap_debug_logger("plugin", "setParameter");
         if (index < parameters.size())
         {
             parameters[index].value = value;
@@ -358,7 +331,6 @@ public:
 
     void getParameterDisplay(VstInt32 index, char *text)
     {
-        clap_debug_logger("plugin", "getParameterDisplay");
         if (index < parameters.size())
         {
             const auto &param = parameters[index];
@@ -430,26 +402,8 @@ public:
         return true;
     }
 
-   /* VstInt32 processEvents(VstEvents *events)
-    {
-        for (int i = 0; i < events->numEvents; i++)
-        {
-            if (!(events->events[i]->type & kVstMidiType))
-            {
-                continue;
-            }
-            VstMidiEvent *midievent = (VstMidiEvent *)(events->events[i]);
-            unsigned char midiMessage[3];
-            memcpy(midiMessage, midievent->midiData, 3);
-            midiMessage[0] = midiMessage[0] & 0xF0;
-            synth->handle_midi_event(midiMessage);
-        }
-        return 0;
-    }*/
-
     void handle_note_event(int key, int velocity, int type)
     {
-        clap_debug_logger("plugin", "handle_note_event");
         unsigned char midiMessage[3] = {
             static_cast<unsigned char>(type ? 0b10010000 : 0b10000000),
             static_cast<unsigned char>(key),
@@ -620,8 +574,6 @@ public:
         xframe->addView(current_param);
 
         knobBg->forget();
-        /*knobBackground->forget();
-        backgroundImage->forget();*/
 
         frame = xframe;
 

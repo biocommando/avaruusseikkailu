@@ -5,7 +5,7 @@ set VSTGUILINK=aeffguieditor.o vstcontrols.o vstgui.o timer.o
 
 rem %GPP% D:\code\c\fst\src\FstAudioEffect.cpp -DWINDOWS_GUI %FSTFLAGS% -Ofast
 
-rem %GPP% "D:\code\c\clapwrap\VSTGui\*.cpp" %VSTGUIFLAGS%
+%GPP% "D:\code\c\clapwrap\VSTGui\*.cpp" %VSTGUIFLAGS%
 
 %GPP%  -I../../clap/include -I../../clapwrap -I../../clapwrap/VSTGui -I"D:\code\c\clapwrap\VSTGui" ^
     ../../clapwrap/clapwrap.cpp ^
