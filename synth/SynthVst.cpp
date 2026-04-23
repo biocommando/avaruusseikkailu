@@ -1,4 +1,6 @@
-#include "audioeffectx.h"
+#include <vst_bridge.h>
+#include <fstream>
+#include <string>
 #ifdef VST_GUI
 #include "aeffguieditor.h"
 #include <windows.h>
@@ -7,6 +9,9 @@
 #include "Synth.h"
 #include "cimpl/wt_sample_loader.h"
 #include <cstring>
+extern void clap_debug_logger(const char *ctx, const char *fmt, ...);
+typedef int VstInt32;
+typedef short VstInt16;
 
 struct Parameter
 {
@@ -15,26 +20,24 @@ struct Parameter
 };
 
 #ifdef VST_GUI
-constexpr const char *file_guid = "9ef9ad6d-26ab-47e6-9bc4-484edb92e144";
-
-static inline void log(std::string s)
+class SynthVstGuiBase : public AEffGUIEditorFst
 {
-    /*FILE *f = fopen("C:\\Users\\space\\Desktop\\avaruusseikkailu\\synth\\log.txt", "a");
-    fprintf(f, s.c_str());
-    fclose(f);*/
-}
+public:
+    virtual void syncParameters() {}
+    SynthVstGuiBase(void *ptr) : AEffGUIEditorFst(ptr) {}
+};
 
 static inline std::string getWorkDir()
 {
     // work out the resource directory
     // first we get the DLL path from windows API
-    extern void *hInstance;
+    /*extern void *hInstance;
     wchar_t workDirWc[1024];
     GetModuleFileName((HMODULE)hInstance, workDirWc, 1024);
     char workDirC[1024];
-    wcstombs(workDirC, workDirWc, 1024);
+    wcstombs(workDirC, workDirWc, 1024);*/
 
-    std::string d = workDirC;
+    std::string d = get_plugin_path();
 
     // let's get rid of the DLL file name
     auto posBslash = d.find_last_of('\\');
@@ -44,250 +47,9 @@ static inline std::string getWorkDir()
     }
     return d;
 }
-
-static inline CBitmap *loadBitmap(const std::string &relativePath)
-{
-    auto workDir = getWorkDir();
-    std::string s = workDir + "\\" + relativePath;
-    std::wstring ws(s.size(), L'#');
-    mbstowcs(&ws[0], s.c_str(), s.size());
-    log("loading file...\n");
-    auto bmp = Gdiplus::Bitmap::FromFile(ws.c_str(), false);
-    log("creating bmp\n");
-    auto cbmp = new CBitmap(bmp);
-    log("deleting gdi+ bmp\n");
-    delete bmp;
-    return cbmp;
-}
-
-class SynthVstGui : public AEffGUIEditor, public CControlListener
-{
-    std::map<int, CTextLabel *> knob_labels;
-    std::map<int, CKnob *> knobs;
-    CTextEdit *current_param = nullptr;
-    int last_tweaked = -1;
-
-    std::vector<std::string> read_preset_names()
-    {
-        std::vector<std::string> list;
-        std::ifstream ifs;
-        ifs.open(getWorkDir() + "\\presets-" + file_guid + ".dat");
-        std::string s;
-        while (std::getline(ifs, s))
-        {
-            if (s != "" && s[0] == '#')
-            {
-                list.push_back(s.substr(1));
-            }
-        }
-        return list;
-    }
-
-    std::map<int, float> read_preset(const std::string &name)
-    {
-        const auto find = '#' + name;
-        std::map<int, float> preset;
-        std::ifstream ifs;
-        ifs.open(getWorkDir() + "\\presets-" + file_guid + ".dat");
-        std::string s;
-        while (std::getline(ifs, s))
-        {
-            if (s == find)
-            {
-                int i = 0;
-                while (std::getline(ifs, s) && s != "")
-                {
-                    if (s[0] == 'p')
-                        i = std::stoi(s.substr(1));
-                    else
-                        preset[i] = std::stof(s);
-                }
-            }
-        }
-        return preset;
-    }
-
-    void save_preset(const std::string &name, const std::map<int, float> &preset)
-    {
-        std::ofstream ofs;
-        ofs.open(getWorkDir() + "\\presets-" + file_guid + ".dat", std::ios_base::app);
-        ofs << '#' << name << std::endl;
-        for (const auto &entry : preset)
-        {
-            ofs << 'p' << entry.first << std::endl;
-            ofs << entry.second << std::endl;
-        }
-        ofs << std::endl;
-    }
-
-public:
-    bool open(void *ptr)
-    {
-        log("loaded data\n");
-        CRect frameSize(0, 0, 750, 600);
-        CColor cBg = {127, 127, 127, 255}, cFg = kWhiteCColor;
-        ERect *wSize;
-        getRect(&wSize);
-
-        wSize->top = wSize->left = 0;
-        wSize->bottom = (VstInt16)frameSize.bottom;
-        wSize->right = (VstInt16)frameSize.right;
-
-        auto xframe = new CFrame(frameSize, ptr, this);
-
-        xframe->setBackgroundColor(cBg);
-
-        CBitmap *knobBg = loadBitmap(std::string("knob-") + file_guid + ".bmp");
-        int i = 0, x = 10, y = 10;
-        while (true)
-        {
-            char param_name[100], param_value[100];
-            effect->getParameterName(i, param_name);
-            if (!*param_name)
-                break;
-            std::string s_name = std::string(param_name);
-            if (s_name == "o2type" || s_name == "v_a" || s_name == "f_a" ||
-                s_name == "cut" || s_name == "env2p" || s_name == "volume" || s_name == "wt1shot")
-            {
-                y = 10;
-                x += 90;
-            }
-            if (s_name == "my_id")
-            {
-                i++;
-                continue;
-            }
-            effect->getParameterDisplay(i, param_value);
-            CRect rect(x, y, x + 80, y + 20);
-            auto label = new CTextLabel(rect, param_name);
-            label->setBackColor(cBg);
-            xframe->addView(label);
-            CRect rect2(x, y + 60, x + 80, y + 80);
-            label = new CTextLabel(rect2, param_value);
-            label->setBackColor(cBg);
-            knob_labels[i] = label;
-            xframe->addView(label);
-            CRect rect3(x + 20, y + 20, x + 60, y + 60);
-            auto knob = new CKnob(rect3, this, i, knobBg, nullptr);
-            knob->setValue(effect->getParameter(i));
-            knobs[i] = knob;
-            xframe->addView(knob);
-            y += 120;
-            i++;
-        }
-        CRect rect_options(0, 550, 120, 570);
-        auto presets = new COptionMenu(rect_options, this, 1000);
-        presets->addEntry(new CMenuItem("Select preset...", 1 << 1));
-        presets->addEntry(new CMenuItem("Save as new"));
-        const auto list = read_preset_names();
-        for (const auto &name : list)
-        {
-            presets->addEntry(new CMenuItem(name.c_str()));
-        }
-        xframe->addView(presets);
-        rect_options = CRect(0, 575, 120, 595);
-        current_param = new CTextEdit(rect_options, this, 2000, "0");
-        xframe->addView(current_param);
-
-        knobBg->forget();
-        /*knobBackground->forget();
-        backgroundImage->forget();*/
-
-        frame = xframe;
-
-        return true;
-    }
-
-    void valueChanged(CControl *control)
-    {
-        if (!frame)
-            return;
-        auto tag = control->getTag();
-
-        if (tag == 1000)
-        {
-            auto menu = (COptionMenu *)control;
-            auto idx = menu->getCurrentIndex();
-            menu->setCurrent(0);
-            if (idx == 1)
-            {
-                std::map<int, float> preset;
-                for (auto &knob_entry : knobs)
-                {
-                    preset[knob_entry.first] = knob_entry.second->getValue();
-                }
-                const auto name = "preset " + std::to_string(menu->getNbEntries() - 1);
-                save_preset(name, preset);
-                menu->addEntry(new CMenuItem(name.c_str()));
-            }
-            else
-            {
-                auto preset = read_preset(menu->getEntry(idx)->getTitle());
-                for (auto &entry : preset)
-                {
-                    effect->setParameterAutomated(entry.first, entry.second);
-                }
-                syncParameters();
-            }
-            return;
-        }
-        if (tag == 2000 && last_tweaked != -1)
-        {
-            char data[256];
-            current_param->getText(data);
-            float val;
-            if (sscanf(data, "%f", &val))
-            {
-                if (val >= 0 && val <= 1)
-                {
-                    effect->setParameterAutomated(last_tweaked, val);
-                    syncParameters();
-                }
-            }
-            return;
-        }
-
-        auto knob = (CKnob *)control;
-        auto value = knob->getValue();
-        effect->setParameterAutomated(tag, value);
-        setParameter(tag, value);
-        current_param->setText(std::to_string(value).c_str());
-        last_tweaked = tag;
-    }
-
-    void setParameter(int id, float value)
-    {
-        if (!frame)
-            return;
-        char param_value[100];
-        knobs[id]->setValue(value);
-        effect->getParameterDisplay(id, param_value);
-        knob_labels[id]->setText(param_value);
-    }
-
-    void syncParameters()
-    {
-        for (auto &x : knobs)
-        {
-            auto val = effect->getParameter(x.first);
-            setParameter(x.first, val);
-        }
-    }
-
-    SynthVstGui(void *ptr) : AEffGUIEditor(ptr)
-    {
-    }
-
-    void close()
-    {
-        auto xframe = frame;
-        frame = 0;
-        delete xframe;
-    }
-};
 #endif
 
-class SynthVst : public AudioEffectX
+class SynthVst
 {
     char *chunk = nullptr;
     std::vector<Parameter> parameters;
@@ -299,6 +61,7 @@ class SynthVst : public AudioEffectX
 
     static std::vector<std::string> splitString(const std::string &s, char c)
     {
+        clap_debug_logger("plugin", "splitString");
         std::vector<std::string> ret;
         int pos = 0;
         do
@@ -415,6 +178,7 @@ class SynthVst : public AudioEffectX
 
     void sync_params()
     {
+        clap_debug_logger("plugin", "sync_params");
         for (auto &param : parameters)
         {
             sync_param(param.name, param.value, false);
@@ -425,22 +189,28 @@ class SynthVst : public AudioEffectX
 
     void read_wt_sample_slot_names()
     {
+        clap_debug_logger("plugin", "read_wt_sample_slot_names");
         std::ifstream ifs;
         ifs.open(getWorkDir() + "\\wt_sample_slot_names.txt");
         std::string s;
         while (std::getline(ifs, s))
         {
             wt_sample_slot_names.push_back(s);
+            clap_debug_logger("plugin", "slot: %s", wt_sample_slot_names[wt_sample_slot_names.size()-1].c_str());
         }
     }
+    bool opened = false;
 public:
-    SynthVst(audioMasterCallback audioMaster) : AudioEffectX(audioMaster, 0, 27)
+    double sampleRate;
+	void *editor = nullptr;
+    SynthVst()
     {
-        setNumInputs(2);          // stereo in
+        clap_debug_logger("plugin", "SynthVst()");
+        /*setNumInputs(2);          // stereo in
         setNumOutputs(2);         // stereo out
         setUniqueID(-1336835329); // identify
         isSynth(true);
-        programsAreChunks();
+        programsAreChunks();*/
         add_param("o1type", 0);
         add_param("o1tune", 0.5);
         add_param("o1mix", 1);
@@ -476,11 +246,12 @@ public:
         add_param("keyoffs", 0.5);
         // Note: add new parameters to the end to not mess up the presets
         //sync_params();
-        hasEditor();
+        //hasEditor();
     }
 
     ~SynthVst()
     {
+        clap_debug_logger("plugin", "~SynthVst()");
         if (chunk)
         {
             free(chunk);
@@ -491,6 +262,7 @@ public:
     }
     VstInt32 getChunk(void **data, bool isPreset)
     {
+        clap_debug_logger("plugin", "getChunk");
         if (chunk)
         {
             free(chunk);
@@ -518,6 +290,7 @@ public:
 
     VstInt32 setChunk(void *data, VstInt32 byteSize, bool isPreset)
     {
+        clap_debug_logger("plugin", "setChunk");
         std::string s((char *)data, byteSize);
         const auto lines = splitString(s, '\n');
         for (const auto &line : lines)
@@ -535,11 +308,13 @@ public:
                 }
             }
         }
+        if (!opened)
+            return 0;
         sync_params();
 #ifdef VST_GUI
         if (editor)
         {
-            ((SynthVstGui *)editor)->syncParameters();
+            ((SynthVstGuiBase *)editor)->syncParameters();
         }
 #endif
         return 0;
@@ -553,12 +328,14 @@ public:
 
     float getParameter(VstInt32 index)
     {
+        clap_debug_logger("plugin", "getParameter");
         if (index < parameters.size())
             return parameters[index].value;
         return 0;
     }
     void setParameter(VstInt32 index, float value)
     {
+        clap_debug_logger("plugin", "setParameter");
         if (index < parameters.size())
         {
             parameters[index].value = value;
@@ -566,7 +343,7 @@ public:
 #ifdef VST_GUI
             if (editor)
             {
-                ((SynthVstGui *)editor)->setParameter(index, value);
+                ((SynthVstGuiBase *)editor)->setParameter(index, value);
             }
 #endif
         }
@@ -581,6 +358,7 @@ public:
 
     void getParameterDisplay(VstInt32 index, char *text)
     {
+        clap_debug_logger("plugin", "getParameterDisplay");
         if (index < parameters.size())
         {
             const auto &param = parameters[index];
@@ -597,7 +375,7 @@ public:
                 strcpy(text, waves[sel]);
             }
             else if (param.name == "o1tune" || param.name == "o2tune")
-                float2string(-24 + 48 * param.value, text, kVstMaxParamStrLen);
+                sprintf(text, "%.3f", -24 + 48 * param.value);
             else if (param.name == "pan")
             {
                 if (param.value == 0.5)
@@ -631,7 +409,7 @@ public:
                 sprintf(text, "%s%d", offset > 0 ? "+" : "", offset);
             }
             else
-                float2string(param.value, text, kVstMaxParamStrLen);
+                sprintf(text, "%.3f", param.value);
         }
         else
             *text = 0;
@@ -652,7 +430,7 @@ public:
         return true;
     }
 
-    VstInt32 processEvents(VstEvents *events)
+   /* VstInt32 processEvents(VstEvents *events)
     {
         for (int i = 0; i < events->numEvents; i++)
         {
@@ -667,20 +445,364 @@ public:
             synth->handle_midi_event(midiMessage);
         }
         return 0;
+    }*/
+
+    void handle_note_event(int key, int velocity, int type)
+    {
+        clap_debug_logger("plugin", "handle_note_event");
+        unsigned char midiMessage[3] = {
+            static_cast<unsigned char>(type ? 0b10010000 : 0b10000000),
+            static_cast<unsigned char>(key),
+            static_cast<unsigned char>(velocity),
+        };
+        synth->handle_midi_event(midiMessage);
     }
+
     void open()
     {
+        opened = true;
         read_wt_sample_slot_names();
         wt_sample_read_all(getWorkDir().c_str());
-        synth = new Synth(getSampleRate());
+        synth = new Synth(sampleRate);
         sync_params();
-#ifdef VST_GUI
-        setEditor(new SynthVstGui(this));
-#endif
     }
 };
 
-AudioEffect *createEffectInstance(audioMasterCallback audioMaster)
+#ifdef VST_GUI
+constexpr const char *file_guid = "9ef9ad6d-26ab-47e6-9bc4-484edb92e144";
+
+static inline void log(std::string s)
 {
-    return new SynthVst(audioMaster);
+    /*FILE *f = fopen("C:\\Users\\space\\Desktop\\avaruusseikkailu\\synth\\log.txt", "a");
+    fprintf(f, s.c_str());
+    fclose(f);*/
+}
+
+static inline CBitmap *loadBitmap(const std::string &relativePath)
+{
+    auto workDir = getWorkDir();
+    std::string s = workDir + "\\" + relativePath;
+    std::wstring ws(s.size(), L'#');
+    mbstowcs(&ws[0], s.c_str(), s.size());
+    auto bmp = Gdiplus::Bitmap::FromFile(ws.c_str(), false);
+    auto cbmp = new CBitmap(bmp);
+    delete bmp;
+    return cbmp;
+}
+
+class SynthVstGui : public SynthVstGuiBase, public CControlListener
+{
+    std::map<int, CTextLabel *> knob_labels;
+    std::map<int, CKnob *> knobs;
+    CTextEdit *current_param = nullptr;
+    int last_tweaked = -1;
+
+    std::vector<std::string> read_preset_names()
+    {
+        std::vector<std::string> list;
+        std::ifstream ifs;
+        ifs.open(getWorkDir() + "\\presets-" + file_guid + ".dat");
+        std::string s;
+        while (std::getline(ifs, s))
+        {
+            if (s != "" && s[0] == '#')
+            {
+                list.push_back(s.substr(1));
+            }
+        }
+        return list;
+    }
+
+    std::map<int, float> read_preset(const std::string &name)
+    {
+        const auto find = '#' + name;
+        std::map<int, float> preset;
+        std::ifstream ifs;
+        ifs.open(getWorkDir() + "\\presets-" + file_guid + ".dat");
+        std::string s;
+        while (std::getline(ifs, s))
+        {
+            if (s == find)
+            {
+                int i = 0;
+                while (std::getline(ifs, s) && s != "")
+                {
+                    if (s[0] == 'p')
+                        i = std::stoi(s.substr(1));
+                    else
+                        preset[i] = std::stof(s);
+                }
+            }
+        }
+        return preset;
+    }
+
+    void save_preset(const std::string &name, const std::map<int, float> &preset)
+    {
+        std::ofstream ofs;
+        ofs.open(getWorkDir() + "\\presets-" + file_guid + ".dat", std::ios_base::app);
+        ofs << '#' << name << std::endl;
+        for (const auto &entry : preset)
+        {
+            ofs << 'p' << entry.first << std::endl;
+            ofs << entry.second << std::endl;
+        }
+        ofs << std::endl;
+    }
+
+public:
+    SynthVst *effect;
+    bool open(void *ptr)
+    {
+        CRect frameSize(0, 0, 750, 600);
+        CColor cBg = {127, 127, 127, 255}, cFg = kWhiteCColor;
+        ERect *wSize;
+        getRect(&wSize);
+
+        wSize->top = wSize->left = 0;
+        wSize->bottom = (VstInt16)frameSize.bottom;
+        wSize->right = (VstInt16)frameSize.right;
+
+        auto xframe = new CFrame(frameSize, ptr, this);
+
+        xframe->setBackgroundColor(cBg);
+
+        CBitmap *knobBg = loadBitmap(std::string("knob-") + file_guid + ".bmp");
+        int i = 0, x = 10, y = 10;
+        while (true)
+        {
+            char param_name[100], param_value[100];
+            effect->getParameterName(i, param_name);
+            if (!*param_name)
+                break;
+            std::string s_name = std::string(param_name);
+            if (s_name == "o2type" || s_name == "v_a" || s_name == "f_a" ||
+                s_name == "cut" || s_name == "env2p" || s_name == "volume" || s_name == "wt1shot")
+            {
+                y = 10;
+                x += 90;
+            }
+            if (s_name == "my_id")
+            {
+                i++;
+                continue;
+            }
+            effect->getParameterDisplay(i, param_value);
+            CRect rect(x, y, x + 80, y + 20);
+            auto label = new CTextLabel(rect, param_name);
+            label->setBackColor(cBg);
+            xframe->addView(label);
+            CRect rect2(x, y + 60, x + 80, y + 80);
+            label = new CTextLabel(rect2, param_value);
+            label->setBackColor(cBg);
+            knob_labels[i] = label;
+            xframe->addView(label);
+            CRect rect3(x + 20, y + 20, x + 60, y + 60);
+            auto knob = new CKnob(rect3, this, i, knobBg, nullptr);
+            knob->setValue(effect->getParameter(i));
+            knobs[i] = knob;
+            xframe->addView(knob);
+            y += 120;
+            i++;
+        }
+        CRect rect_options(0, 550, 120, 570);
+        auto presets = new COptionMenu(rect_options, this, 1000);
+        presets->addEntry(new CMenuItem("Select preset...", 1 << 1));
+        presets->addEntry(new CMenuItem("Save as new"));
+        const auto list = read_preset_names();
+        for (const auto &name : list)
+        {
+            presets->addEntry(new CMenuItem(name.c_str()));
+        }
+        xframe->addView(presets);
+        rect_options = CRect(0, 575, 120, 595);
+        current_param = new CTextEdit(rect_options, this, 2000, "0");
+        xframe->addView(current_param);
+
+        knobBg->forget();
+        /*knobBackground->forget();
+        backgroundImage->forget();*/
+
+        frame = xframe;
+
+        return true;
+    }
+
+    void valueChanged(CControl *control)
+    {
+        if (!frame)
+            return;
+        auto tag = control->getTag();
+
+        if (tag == 1000)
+        {
+            auto menu = (COptionMenu *)control;
+            auto idx = menu->getCurrentIndex();
+            menu->setCurrent(0);
+            if (idx == 1)
+            {
+                std::map<int, float> preset;
+                for (auto &knob_entry : knobs)
+                {
+                    preset[knob_entry.first] = knob_entry.second->getValue();
+                }
+                const auto name = "preset " + std::to_string(menu->getNbEntries() - 1);
+                save_preset(name, preset);
+                menu->addEntry(new CMenuItem(name.c_str()));
+            }
+            else
+            {
+                auto preset = read_preset(menu->getEntry(idx)->getTitle());
+                for (auto &entry : preset)
+                {
+                    effect->setParameter(entry.first, entry.second);
+                }
+                syncParameters();
+            }
+            return;
+        }
+        if (tag == 2000 && last_tweaked != -1)
+        {
+            char data[256];
+            current_param->getText(data);
+            float val;
+            if (sscanf(data, "%f", &val))
+            {
+                if (val >= 0 && val <= 1)
+                {
+                    effect->setParameter(last_tweaked, val);
+                    syncParameters();
+                }
+            }
+            return;
+        }
+
+        auto knob = (CKnob *)control;
+        auto value = knob->getValue();
+        effect->setParameter(tag, value);
+        setParameter(tag, value);
+        current_param->setText(std::to_string(value).c_str());
+        last_tweaked = tag;
+    }
+
+    void setParameter(int id, float value)
+    {
+        if (!frame)
+            return;
+        char param_value[100];
+        knobs[id]->setValue(value);
+        effect->getParameterDisplay(id, param_value);
+        knob_labels[id]->setText(param_value);
+    }
+
+    void syncParameters()
+    {
+        for (auto &x : knobs)
+        {
+            auto val = effect->getParameter(x.first);
+            setParameter(x.first, val);
+        }
+    }
+
+    SynthVstGui(SynthVst* ptr) : SynthVstGuiBase(ptr), effect(ptr)
+    {
+    }
+
+    void close()
+    {
+        auto xframe = frame;
+        frame = 0;
+        delete xframe;
+    }
+};
+#endif
+
+const char *get_vst_plugin_unique_id()
+{
+	return "com.joonassalonpaa.miditrackersynth";
+}
+const char *get_vst_plugin_name()
+{
+	return "Midi Tracker Synth";
+}
+const char *get_vst_plugin_vendor()
+{
+	return "Joonas Salonpaa";
+}
+const char *get_vst_plugin_version()
+{
+	return "0.1.0";
+}
+bool vst_is_synth()
+{
+	return true;
+}
+#define WPLUG ((SynthVst*)vst->effect)
+bool VSTPlugin_init(VSTPlugin *vst)
+{
+    return true;
+}
+void VSTPlugin_activate(VSTPlugin *vst, double sr)
+{
+	WPLUG->sampleRate = sr;
+	WPLUG->open();
+}
+void VSTPlugin_process(VSTPlugin *vst, float **in, float **out, int frames)
+{
+	WPLUG->processReplacing(in, out, frames);
+}
+
+void VSTPlugin_set_param(VSTPlugin *vst, int index, float value)
+{
+	WPLUG->setParameter(index, value);
+}
+
+float VSTPlugin_get_param(VSTPlugin *vst, int index)
+{
+    return WPLUG->getParameter(index);
+}
+int VSTPlugin_get_param_count(VSTPlugin *vst)
+{
+    return 32;
+}
+void VSTPlugin_process_note_event(VSTPlugin *vst, int key, int velocity, int type)
+{
+    WPLUG->handle_note_event(key, velocity, type);
+}
+void *VSTPlugin_get_chunk(VSTPlugin *vst, size_t *size)
+{
+	void *data;
+    *size = static_cast<size_t>(WPLUG->getChunk(&data, false));
+	return data;
+}
+bool VSTPlugin_set_chunk(VSTPlugin *vst, const void *data, size_t size)
+{
+	WPLUG->setChunk(const_cast<void*>(data), size, false);
+    return true;
+}
+void VSTPlugin_destroy(VSTPlugin *vst)
+{
+}
+void VSTPlugin_get_param_name(VSTPlugin *vst, int index, char *label)
+{
+    WPLUG->getParameterName(index, label);
+}
+void VSTPlugin_get_param_display(VSTPlugin *vst, int index, char *label)
+{
+    WPLUG->getParameterDisplay(index, label);
+}
+
+void *VSTPlugin_new_plugin(VSTPlugin *vst)
+{
+	return new SynthVst();
+}
+
+bool VSTPlugin_has_ui(VSTPlugin *vst)
+{
+    return true;
+}
+void *VSTPlugin_create_editor(VSTPlugin *vst)
+{
+	WPLUG->editor = new SynthVstGui(WPLUG);
+	return WPLUG->editor;
 }
